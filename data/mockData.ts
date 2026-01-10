@@ -10,6 +10,9 @@ export const USERS: User[] = [
 const WORKERS = USERS.filter(u => u.role === Role.WORKER);
 
 const today = new Date();
+const yesterday = new Date();
+yesterday.setDate(today.getDate() - 1); // Para probar planes vencidos
+
 const thisMonthDate = new Date(today.getFullYear(), today.getMonth(), 1);
 const nextMonthDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 
@@ -26,7 +29,7 @@ export const INITIAL_PLANS: Plan[] = [
     month: thisMonthName,
     year: thisMonthDate.getFullYear(),
     monthIndex: thisMonthDate.getMonth(),
-    deadline: endOfThisMonth.toISOString(),
+    deadline: yesterday.toISOString(), // Establecido a ayer para mostrar el estado vencido
     activities: [
       { 
         id: 101, 
@@ -68,7 +71,7 @@ export const INITIAL_PLANS: Plan[] = [
     month: thisMonthName,
     year: thisMonthDate.getFullYear(),
     monthIndex: thisMonthDate.getMonth(),
-    deadline: new Date(today.getFullYear(), today.getMonth(), 15).toISOString(), // A past deadline for testing
+    deadline: new Date(today.getFullYear(), today.getMonth(), 15).toISOString(), // Una fecha límite pasada para pruebas
     activities: [
       { 
         id: 201, 
