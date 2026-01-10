@@ -16,18 +16,24 @@ export enum ActivityStatus {
   COMPLETED = 'completed',
 }
 
+export interface ActivityCompletion {
+  workerId: number;
+  status: ActivityStatus;
+  evidenceFile?: string;
+}
+
 export interface Activity {
   id: number;
   name: string;
-  status: ActivityStatus;
-  workerId: number;
-  evidenceFile?: string;
+  completions: ActivityCompletion[];
 }
 
 export interface Plan {
   id: number;
   name: string;
   month: string;
+  year: number;
+  monthIndex: number;
   deadline: string; // ISO 8601 format date string
   activities: Activity[];
 }

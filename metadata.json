@@ -1,5 +1,5 @@
 {
-  "name": "Monthly POA Manager",
-  "description": "A web application to manage Monthly Operational Plans (POA). Supervisors can create and track plans, while workers can view their assigned activities and upload evidence of completion.",
+  "name": "Gestor de POA Mensual",
+  "description": "Una aplicación web para gestionar Planes Operativos Anuales (POA) mensuales. Los supervisores pueden crear y seguir planes, mientras que los trabajadores pueden ver sus actividades asignadas y subir la evidencia de su cumplimiento.",
   "requestFramePermissions": []
 }

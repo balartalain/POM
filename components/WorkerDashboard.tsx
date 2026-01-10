@@ -14,13 +14,8 @@ const WorkerDashboard: React.FC<WorkerDashboardProps> = ({ worker }) => {
   const [expandedPlanId, setExpandedPlanId] = useState<number | null>(null);
   
   const workerPlans = useMemo(() => {
-    return plans
-      .map(plan => ({
-        ...plan,
-        activities: plan.activities.filter(act => act.workerId === worker.id),
-      }))
-      .filter(plan => plan.activities.length > 0);
-  }, [plans, worker.id]);
+    return plans;
+  }, [plans]);
 
   const handleTogglePlan = (planId: number) => {
     setExpandedPlanId(prevId => (prevId === planId ? null : planId));
@@ -34,7 +29,13 @@ const WorkerDashboard: React.FC<WorkerDashboardProps> = ({ worker }) => {
             ...plan,
             activities: plan.activities.map(activity => {
               if (activity.id === activityId) {
-                return { ...activity, status: ActivityStatus.COMPLETED, evidenceFile: fileName };
+                const updatedCompletions = activity.completions.map(comp => {
+                    if (comp.workerId === worker.id) {
+                        return { ...comp, status: ActivityStatus.COMPLETED, evidenceFile: fileName };
+                    }
+                    return comp;
+                });
+                return { ...activity, completions: updatedCompletions };
               }
               return activity;
             }),
@@ -47,32 +48,40 @@ const WorkerDashboard: React.FC<WorkerDashboardProps> = ({ worker }) => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-dark-gray">My Assigned Plans</h2>
+      <h2 className="text-2xl font-bold text-dark-gray">Mis Planes Asignados</h2>
       {workerPlans.length > 0 ? (
         workerPlans.map(plan => (
           <div key={plan.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div onClick={() => handleTogglePlan(plan.id)} className="cursor-pointer">
-              <PlanCard plan={plan} userRole={worker.role} />
-            </div>
+            <PlanCard 
+              plan={plan} 
+              userRole={worker.role} 
+              onClick={() => handleTogglePlan(plan.id)}
+            />
             {expandedPlanId === plan.id && (
               <div className="p-4 sm:p-6 border-t border-gray-200">
-                <h4 className="text-md font-semibold text-dark-gray mb-3">My Activities</h4>
+                <h4 className="text-md font-semibold text-dark-gray mb-3">Mis Actividades</h4>
                 <ul className="space-y-3">
-                  {plan.activities.map(activity => (
-                    <ActivityItem
-                      key={activity.id}
-                      activity={activity}
-                      planDeadline={plan.deadline}
-                      onComplete={(fileName) => handleCompleteActivity(plan.id, activity.id, fileName)}
-                    />
-                  ))}
+                  {plan.activities.map(activity => {
+                    const myCompletion = activity.completions.find(c => c.workerId === worker.id);
+                    if (!myCompletion) return null;
+
+                    return (
+                        <ActivityItem
+                        key={`${activity.id}-${worker.id}`}
+                        activityName={activity.name}
+                        completion={myCompletion}
+                        planDeadline={plan.deadline}
+                        onComplete={(fileName) => handleCompleteActivity(plan.id, activity.id, fileName)}
+                        />
+                    );
+                  })}
                 </ul>
               </div>
             )}
           </div>
         ))
       ) : (
-        <p className="text-center text-dark-gray p-6 bg-white rounded-lg shadow">No plans assigned to you yet.</p>
+        <p className="text-center text-dark-gray p-6 bg-white rounded-lg shadow">Aún no tienes planes asignados.</p>
       )}
     </div>
   );
