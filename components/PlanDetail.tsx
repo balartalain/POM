@@ -4,7 +4,7 @@ import { Plan, User, ActivityStatus, ActivityCompletion, Activity } from '../typ
 import Modal from './Modal';
 import WorkerProgress from './WorkerProgress';
 import ProgressBar from './ProgressBar';
-import { ArrowLeftIcon, PlusIcon, CheckCircleIcon, ClockIcon, DocumentCheckIcon } from './Icons';
+import { ArrowLeftIcon, PlusIcon, CheckCircleIcon, ClockIcon, DocumentCheckIcon, SearchIcon } from './Icons';
 
 interface PlanDetailProps {
   plan: Plan;
@@ -18,6 +18,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newActivities, setNewActivities] = useState<Array<{name: string}>>([{ name: '' }]);
     const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
+    const [workerSearchTerm, setWorkerSearchTerm] = useState('');
 
     useEffect(() => {
         if (plan.activities && plan.activities.length > 0) {
@@ -27,6 +28,12 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
         }
     }, [plan]);
     
+    const filteredWorkersForActivity = useMemo(() => {
+        return workers.filter(worker =>
+            worker.name.toLowerCase().includes(workerSearchTerm.toLowerCase())
+        );
+    }, [workers, workerSearchTerm]);
+
     const handleAddActivityField = () => {
         setNewActivities([...newActivities, { name: '' }]);
     };
@@ -152,23 +159,39 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
 
                 {/* Right Panel: Worker Progress for Selected Activity */}
                 <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div className="p-4 bg-gray-50 border-b">
+                    <div className="p-4 bg-gray-50 border-b flex flex-col sm:flex-row justify-between sm:items-center gap-3">
                         <h3 className="font-semibold text-dark-gray">Progreso por Trabajador</h3>
+                        <div className="relative w-full sm:w-56">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <SearchIcon className="h-5 w-5 text-gray-400" />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Buscar trabajador..."
+                                value={workerSearchTerm}
+                                onChange={(e) => setWorkerSearchTerm(e.target.value)}
+                                className="block w-full pl-10 pr-3 py-1.5 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
+                            />
+                        </div>
                     </div>
                     <div className="p-6 max-h-[500px] overflow-y-auto">
                         {selectedActivity ? (
                             <div className="space-y-4">
                                 <h4 className="font-bold text-lg text-primary">{selectedActivity.name}</h4>
                                 <ul className="space-y-3">
-                                    {workers.map(worker => {
-                                        const completion = selectedActivity.completions.find(c => c.workerId === worker.id);
-                                        return (
-                                            <li key={worker.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                                                <span className="font-medium text-dark-gray">{worker.name}</span>
-                                                {completion ? renderStatusBadge(completion, plan.deadline) : <span className="text-gray-400 text-sm">N/A</span>}
-                                            </li>
-                                        )
-                                    })}
+                                    {filteredWorkersForActivity.length > 0 ? (
+                                        filteredWorkersForActivity.map(worker => {
+                                            const completion = selectedActivity.completions.find(c => c.workerId === worker.id);
+                                            return (
+                                                <li key={worker.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                                                    <span className="font-medium text-dark-gray">{worker.name}</span>
+                                                    {completion ? renderStatusBadge(completion, plan.deadline) : <span className="text-gray-400 text-sm">N/A</span>}
+                                                </li>
+                                            )
+                                        })
+                                    ) : (
+                                        <p className="text-center text-dark-gray py-4">No se encontraron trabajadores.</p>
+                                    )}
                                 </ul>
                             </div>
                         ) : (
