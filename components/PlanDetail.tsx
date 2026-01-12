@@ -21,18 +21,16 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
     const [workerSearchTerm, setWorkerSearchTerm] = useState('');
 
     useEffect(() => {
-        if (plan.activities && plan.activities.length > 0) {
-            setSelectedActivity(plan.activities[0]);
-        } else {
-            setSelectedActivity(null);
-        }
-    }, [plan]);
+        // Reset to activity list view when plan changes
+        setSelectedActivity(null);
+    }, [plan.id]);
     
     const filteredWorkersForActivity = useMemo(() => {
+        if (!selectedActivity) return [];
         return workers.filter(worker =>
             worker.name.toLowerCase().includes(workerSearchTerm.toLowerCase())
         );
-    }, [workers, workerSearchTerm]);
+    }, [workers, workerSearchTerm, selectedActivity]);
 
     const handleAddActivityField = () => {
         setNewActivities([...newActivities, { name: '' }]);
@@ -122,27 +120,24 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
             
             <WorkerProgress plans={[plan]} users={workers} onSelectWorker={onSelectWorker} />
             
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-dark-gray">Estado de las Actividades</h2>
-                <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors">
-                    <PlusIcon className="w-5 h-5"/>
-                    Añadir Actividades
-                </button>
-            </div>
-            
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left Panel: Activities List */}
+            {/* Conditional View: Activities List OR Worker Progress */}
+            {!selectedActivity ? (
+                // Activities List View
                 <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div className="p-4 bg-gray-50 border-b">
-                        <h3 className="font-semibold text-dark-gray">Actividades del Plan</h3>
+                    <div className="p-4 bg-gray-50 border-b flex justify-between items-center flex-wrap gap-3">
+                        <h2 className="text-2xl font-bold text-dark-gray">Estado de las Actividades</h2>
+                        <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors">
+                            <PlusIcon className="w-5 h-5"/>
+                            Añadir Actividades
+                        </button>
                     </div>
                     {plan.activities.length > 0 ? (
-                        <ul className="max-h-[500px] overflow-y-auto divide-y divide-gray-200">
+                        <ul className="divide-y divide-gray-200">
                             {plan.activities.map((activity) => (
                                 <li key={activity.id}>
                                     <button 
                                         onClick={() => setSelectedActivity(activity)}
-                                        className={`w-full text-left p-4 border-l-4 transition-colors ${selectedActivity?.id === activity.id ? 'bg-secondary border-primary' : 'border-transparent hover:bg-light-gray'}`}
+                                        className="w-full text-left p-4 hover:bg-light-gray transition-colors"
                                     >
                                         <p className="font-medium text-dark-gray">{activity.name}</p>
                                         <div className="mt-2">
@@ -153,57 +148,53 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
                             ))}
                         </ul>
                     ) : (
-                        <p className="p-6 text-center text-dark-gray">No se encontraron actividades para este plan.</p>
+                        <p className="p-6 text-center text-dark-gray">No se encontraron actividades para este plan. Haz clic en "Añadir Actividades" para comenzar.</p>
                     )}
                 </div>
-
-                {/* Right Panel: Worker Progress for Selected Activity */}
+            ) : (
+                // Worker Progress for Selected Activity View
                 <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div className="p-4 bg-gray-50 border-b flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                        <h3 className="font-semibold text-dark-gray">Progreso por Trabajador</h3>
-                        <div className="relative w-full sm:w-56">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <SearchIcon className="h-5 w-5 text-gray-400" />
+                    <div className="p-4 bg-gray-50 border-b">
+                         <button onClick={() => setSelectedActivity(null)} className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline mb-4">
+                            <ArrowLeftIcon className="w-5 h-5" />
+                            Volver a Actividades
+                        </button>
+                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
+                            <h3 className="text-lg font-semibold text-dark-gray">Progreso por Trabajador</h3>
+                            <div className="relative w-full sm:w-56">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <SearchIcon className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar trabajador..."
+                                    value={workerSearchTerm}
+                                    onChange={(e) => setWorkerSearchTerm(e.target.value)}
+                                    className="block w-full pl-10 pr-3 py-1.5 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
+                                />
                             </div>
-                            <input
-                                type="text"
-                                placeholder="Buscar trabajador..."
-                                value={workerSearchTerm}
-                                onChange={(e) => setWorkerSearchTerm(e.target.value)}
-                                className="block w-full pl-10 pr-3 py-1.5 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
-                            />
                         </div>
                     </div>
-                    <div className="p-6 max-h-[500px] overflow-y-auto">
-                        {selectedActivity ? (
-                            <div className="space-y-4">
-                                <h4 className="font-bold text-lg text-primary">{selectedActivity.name}</h4>
-                                <ul className="space-y-3">
-                                    {filteredWorkersForActivity.length > 0 ? (
-                                        filteredWorkersForActivity.map(worker => {
-                                            const completion = selectedActivity.completions.find(c => c.workerId === worker.id);
-                                            return (
-                                                <li key={worker.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                                                    <span className="font-medium text-dark-gray">{worker.name}</span>
-                                                    {completion ? renderStatusBadge(completion, plan.deadline) : <span className="text-gray-400 text-sm">N/A</span>}
-                                                </li>
-                                            )
-                                        })
-                                    ) : (
-                                        <p className="text-center text-dark-gray py-4">No se encontraron trabajadores.</p>
-                                    )}
-                                </ul>
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center h-full min-h-[150px]">
-                                <p className="text-center text-dark-gray">
-                                    {plan.activities.length > 0 ? 'Selecciona una actividad de la izquierda para ver los detalles.' : 'Añade una actividad para comenzar.'}
-                                </p>
-                            </div>
-                        )}
+                    <div className="p-6">
+                        <h4 className="font-bold text-xl text-primary mb-4">{selectedActivity.name}</h4>
+                        <ul className="space-y-3">
+                            {filteredWorkersForActivity.length > 0 ? (
+                                filteredWorkersForActivity.map(worker => {
+                                    const completion = selectedActivity.completions.find(c => c.workerId === worker.id);
+                                    return (
+                                        <li key={worker.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
+                                            <span className="font-medium text-dark-gray">{worker.name}</span>
+                                            {completion ? renderStatusBadge(completion, plan.deadline) : <span className="text-gray-400 text-sm">N/A</span>}
+                                        </li>
+                                    )
+                                })
+                            ) : (
+                                <p className="text-center text-dark-gray py-4">No se encontraron trabajadores con ese nombre.</p>
+                            )}
+                        </ul>
                     </div>
                 </div>
-            </div>
+            )}
 
             <Modal isOpen={isModalOpen} onClose={closeModal} title={`Añadir Actividades a "${plan.name}"`}>
                 <div className="space-y-4">
