@@ -18,6 +18,16 @@
               'light-gray': '#F3F4F6',
               'dark-gray': '#4B5563',
             },
+            animation: {
+              'fade-in': 'fadeIn 0.5s ease-in-out',
+              'fade-in-fast': 'fadeIn 0.3s ease-in-out',
+            },
+            keyframes: {
+                fadeIn: {
+                    '0%': { opacity: '0', transform: 'translateY(-5px)' },
+                    '100%': { opacity: '1', transform: 'translateY(0)' },
+                },
+            },
           },
         },
       }

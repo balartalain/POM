@@ -4,7 +4,7 @@ import { Plan, User, ActivityStatus, ActivityCompletion, Activity } from '../typ
 import Modal from './Modal';
 import WorkerProgress from './WorkerProgress';
 import ProgressBar from './ProgressBar';
-import { ArrowLeftIcon, PlusIcon, CheckCircleIcon, ClockIcon, DocumentCheckIcon, SearchIcon } from './Icons';
+import { ArrowLeftIcon, PlusIcon, CheckCircleIcon, ClockIcon, DocumentCheckIcon, SearchIcon, ChevronDownIcon } from './Icons';
 
 interface PlanDetailProps {
   plan: Plan;
@@ -19,10 +19,16 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
     const [newActivities, setNewActivities] = useState<Array<{name: string}>>([{ name: '' }]);
     const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
     const [workerSearchTerm, setWorkerSearchTerm] = useState('');
+    const [activeView, setActiveView] = useState<'activities' | 'workers'>('activities');
+    const [workerListSearchTerm, setWorkerListSearchTerm] = useState('');
+    const [expandedWorkerId, setExpandedWorkerId] = useState<number | null>(null);
+
 
     useEffect(() => {
         // Reset to activity list view when plan changes
         setSelectedActivity(null);
+        setActiveView('activities');
+        setExpandedWorkerId(null);
     }, [plan.id]);
     
     const filteredWorkersForActivity = useMemo(() => {
@@ -31,6 +37,35 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
             worker.name.toLowerCase().includes(workerSearchTerm.toLowerCase())
         );
     }, [workers, workerSearchTerm, selectedActivity]);
+
+    // Memoized calculation for worker progress within THIS plan
+    const workerPlanProgress = useMemo(() => {
+        return workers.map(worker => {
+            const workerCompletions = plan.activities
+                .map(a => a.completions.find(c => c.workerId === worker.id))
+                .filter((c): c is ActivityCompletion => c !== undefined);
+            
+            const total = workerCompletions.length;
+            if (total === 0) {
+                return { worker, completed: 0, total: 0, progress: 0 };
+            }
+            
+            const completed = workerCompletions.filter(c => c?.status === ActivityStatus.COMPLETED).length;
+            const progress = (completed / total) * 100;
+            return { worker, completed, total, progress };
+        });
+    }, [plan, workers]);
+
+    // Memoized filtering of workers based on search
+    const filteredWorkerPlanProgress = useMemo(() => {
+        return workerPlanProgress.filter(({ worker }) =>
+            worker.name.toLowerCase().includes(workerListSearchTerm.toLowerCase())
+        );
+    }, [workerPlanProgress, workerListSearchTerm]);
+
+    const toggleWorkerExpansion = (workerId: number) => {
+        setExpandedWorkerId(prevId => (prevId === workerId ? null : workerId));
+    };
 
     const handleAddActivityField = () => {
         setNewActivities([...newActivities, { name: '' }]);
@@ -120,40 +155,135 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
             
             <WorkerProgress plans={[plan]} users={workers} onSelectWorker={onSelectWorker} />
             
-            {/* Conditional View: Activities List OR Worker Progress */}
+            {/* Conditional View: Tabs or Activity Detail */}
             {!selectedActivity ? (
-                // Activities List View
-                <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div className="p-4 bg-gray-50 border-b flex justify-between items-center flex-wrap gap-3">
-                        <h2 className="text-2xl font-bold text-dark-gray">Estado de las Actividades</h2>
-                        <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors">
-                            <PlusIcon className="w-5 h-5"/>
-                            Añadir Actividades
-                        </button>
+                 <>
+                    <div className="border-b border-gray-200">
+                        <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                            <button
+                                onClick={() => setActiveView('activities')}
+                                className={ activeView === 'activities'
+                                    ? 'border-primary text-primary whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm'
+                                }
+                            >
+                                Actividades
+                            </button>
+                            <button
+                                onClick={() => setActiveView('workers')}
+                                className={ activeView === 'workers'
+                                    ? 'border-primary text-primary whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm'
+                                }
+                            >
+                                Trabajadores
+                            </button>
+                        </nav>
                     </div>
-                    {plan.activities.length > 0 ? (
-                        <ul className="divide-y divide-gray-200">
-                            {plan.activities.map((activity) => (
-                                <li key={activity.id}>
-                                    <button 
-                                        onClick={() => setSelectedActivity(activity)}
-                                        className="w-full text-left p-4 hover:bg-light-gray transition-colors"
-                                    >
-                                        <p className="font-medium text-dark-gray">{activity.name}</p>
-                                        <div className="mt-2">
-                                            <ProgressBar value={getActivityProgress(activity)} />
-                                        </div>
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="p-6 text-center text-dark-gray">No se encontraron actividades para este plan. Haz clic en "Añadir Actividades" para comenzar.</p>
+
+                    {activeView === 'activities' && (
+                        <div className="bg-white rounded-lg shadow-md overflow-hidden animate-fade-in">
+                            <div className="p-4 bg-gray-50 border-b flex justify-between items-center flex-wrap gap-3">
+                                <h2 className="text-2xl font-bold text-dark-gray">Estado de las Actividades</h2>
+                                <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors">
+                                    <PlusIcon className="w-5 h-5"/>
+                                    Añadir Actividades
+                                </button>
+                            </div>
+                            {plan.activities.length > 0 ? (
+                                <ul className="divide-y divide-gray-200">
+                                    {plan.activities.map((activity) => (
+                                        <li key={activity.id}>
+                                            <button 
+                                                onClick={() => setSelectedActivity(activity)}
+                                                className="w-full text-left p-4 hover:bg-light-gray transition-colors"
+                                            >
+                                                <p className="font-medium text-dark-gray">{activity.name}</p>
+                                                <div className="mt-2">
+                                                    <ProgressBar value={getActivityProgress(activity)} />
+                                                </div>
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="p-6 text-center text-dark-gray">No se encontraron actividades para este plan. Haz clic en "Añadir Actividades" para comenzar.</p>
+                            )}
+                        </div>
                     )}
-                </div>
+                    
+                    {activeView === 'workers' && (
+                        <div className="bg-white rounded-lg shadow-md overflow-hidden animate-fade-in">
+                            <div className="p-4 bg-gray-50 border-b flex justify-between items-center flex-wrap gap-3">
+                                <h2 className="text-2xl font-bold text-dark-gray">Trabajadores del Plan</h2>
+                                <div className="relative w-full sm:w-64">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <SearchIcon className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Buscar trabajador..."
+                                        value={workerListSearchTerm}
+                                        onChange={(e) => setWorkerListSearchTerm(e.target.value)}
+                                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
+                                    />
+                                </div>
+                            </div>
+                            <div className="p-4 sm:p-6 space-y-2">
+                                {filteredWorkerPlanProgress.length > 0 ? (
+                                    filteredWorkerPlanProgress.map(({ worker, completed, total, progress }) => {
+                                        const isExpanded = expandedWorkerId === worker.id;
+                                        return (
+                                        <div key={worker.id} className="bg-gray-50 rounded-lg border overflow-hidden">
+                                            <button 
+                                                className="w-full p-3 text-left flex justify-between items-center hover:bg-gray-100 transition-colors"
+                                                onClick={() => toggleWorkerExpansion(worker.id)}
+                                                aria-expanded={isExpanded}
+                                                aria-controls={`worker-details-${worker.id}`}
+                                            >
+                                                <div className="flex-grow pr-4">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="font-medium text-dark-gray">{worker.name}</span>
+                                                        <span className="text-sm text-gray-500">{completed} / {total} tareas</span>
+                                                    </div>
+                                                    <ProgressBar value={progress} />
+                                                </div>
+                                                <ChevronDownIcon className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                                            </button>
+                                            {isExpanded && (
+                                                <div id={`worker-details-${worker.id}`} className="p-4 bg-white border-t animate-fade-in-fast">
+                                                    <h5 className="text-sm font-semibold text-dark-gray mb-3">Detalle de Actividades Asignadas:</h5>
+                                                    <ul className="space-y-3">
+                                                        {plan.activities.map(activity => {
+                                                            const completion = activity.completions.find(c => c.workerId === worker.id);
+                                                            if (!completion) return null;
+                                                            
+                                                            return (
+                                                                <li key={activity.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 bg-light-gray rounded-md border">
+                                                                    <span className="text-sm text-dark-gray mb-2 sm:mb-0 flex-1 pr-2">{activity.name}</span>
+                                                                    {renderStatusBadge(completion, plan.deadline)}
+                                                                </li>
+                                                            );
+                                                        })}
+                                                        {plan.activities.filter(a => a.completions.some(c => c.workerId === worker.id)).length === 0 && (
+                                                            <p className="text-center text-sm text-gray-500 py-2">No hay actividades asignadas a este trabajador en este plan.</p>
+                                                        )}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )})
+                                ) : (
+                                    <p className="text-center text-dark-gray py-4">No se encontraron trabajadores con ese nombre.</p>
+                                )}
+                                { workers.length === 0 && <p className="text-center text-dark-gray py-4">No hay trabajadores asignados a este plan.</p>}
+                            </div>
+                        </div>
+                    )}
+                </>
             ) : (
                 // Worker Progress for Selected Activity View
-                <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="bg-white rounded-lg shadow-md overflow-hidden animate-fade-in">
                     <div className="p-4 bg-gray-50 border-b">
                          <button onClick={() => setSelectedActivity(null)} className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline mb-4">
                             <ArrowLeftIcon className="w-5 h-5" />
