@@ -1,5 +1,5 @@
 {
-  "name": "Gestor de POA Mensual",
-  "description": "Una aplicación web para gestionar Planes Operativos Anuales (POA) mensuales. Los supervisores pueden crear y seguir planes, mientras que los trabajadores pueden ver sus actividades asignadas y subir la evidencia de su cumplimiento.",
+  "name": "Gestor de PAME Mensual",
+  "description": "Una aplicación web para gestionar Planes de Actividad Mensual (PAME). Los supervisores pueden crear y seguir planes, mientras que los trabajadores pueden ver sus actividades asignadas y subir la evidencia de su cumplimiento.",
   "requestFramePermissions": []
 }

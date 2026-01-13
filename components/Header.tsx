@@ -14,7 +14,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <h1 className="text-2xl font-bold text-white">Gestor de POA Mensual</h1>
+            <h1 className="text-lg sm:text-2xl font-bold text-white">Plan de Actividades Mensual - PAME</h1>
           </div>
           <div className="flex items-center space-x-4">
             <div className="text-right">

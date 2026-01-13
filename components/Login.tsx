@@ -21,7 +21,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 space-y-8">
         <div className="text-center">
-            <h1 className="text-3xl font-bold text-primary">Gestor de POA</h1>
+            <h1 className="text-3xl font-bold text-primary">Gestor de PAME</h1>
             <p className="mt-2 text-dark-gray">Inicia sesión en tu cuenta</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
