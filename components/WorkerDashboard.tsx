@@ -23,15 +23,16 @@ const WorkerDashboard: React.FC<WorkerDashboardProps> = ({ worker }) => {
       .sort((a, b) => a.monthIndex - b.monthIndex);
   }, [plans, selectedYear, worker.id]);
   
+  // FIX: Explicitly type the accumulator in the `reduce` function to ensure correct type inference for `plansByMonth`.
   const plansByMonth = useMemo(() => {
-    return filteredPlans.reduce((acc, plan) => {
+    return filteredPlans.reduce((acc: Record<string, Plan[]>, plan) => {
       const monthName = MONTHS[plan.monthIndex];
       if (!acc[monthName]) {
         acc[monthName] = [];
       }
       acc[monthName].push(plan);
       return acc;
-    }, {} as Record<string, Plan[]>);
+    }, {});
   }, [filteredPlans]);
 
   const handleSelectPlan = (plan: Plan) => {

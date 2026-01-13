@@ -2,7 +2,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plan, User, ActivityStatus, ActivityCompletion, Activity } from '../types';
 import Modal from './Modal';
-import WorkerProgress from './WorkerProgress';
 import ProgressBar from './ProgressBar';
 import { ArrowLeftIcon, PlusIcon, CheckCircleIcon, ClockIcon, DocumentCheckIcon, SearchIcon, ChevronDownIcon } from './Icons';
 
@@ -11,10 +10,9 @@ interface PlanDetailProps {
   workers: User[];
   onBack: () => void;
   onAddActivities: (planId: number, newActivities: Array<{name: string}>) => void;
-  onSelectWorker: (worker: User) => void;
 }
 
-const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddActivities, onSelectWorker }) => {
+const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddActivities }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newActivities, setNewActivities] = useState<Array<{name: string}>>([{ name: '' }]);
     const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -152,8 +150,6 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
                     </p>
                 </div>
             </div>
-            
-            <WorkerProgress plans={[plan]} users={workers} onSelectWorker={onSelectWorker} />
             
             {/* Conditional View: Tabs or Activity Detail */}
             {!selectedActivity ? (

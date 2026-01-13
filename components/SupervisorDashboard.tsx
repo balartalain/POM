@@ -2,12 +2,10 @@
 import React, { useState, useMemo } from 'react';
 import { User, Plan, Activity, ActivityStatus, Role } from '../types';
 import { INITIAL_PLANS, USERS } from '../data/mockData';
-import WorkerProgress from './WorkerProgress';
 import Modal from './Modal';
 import { PlusIcon } from './Icons';
 import PlanCard from './PlanCard';
 import PlanDetail from './PlanDetail';
-import WorkerDetailView from './WorkerDetailView';
 
 interface SupervisorDashboardProps {
   supervisor: User;
@@ -19,7 +17,6 @@ const YEARS = Array.from({length: 5}, (_, i) => new Date().getFullYear() - 2 + i
 const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor }) => {
   const [plans, setPlans] = useState<Plan[]>(INITIAL_PLANS);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  const [detailWorker, setDetailWorker] = useState<User | null>(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newPlanName, setNewPlanName] = useState('');
@@ -36,29 +33,23 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
       .sort((a, b) => a.monthIndex - b.monthIndex);
   }, [plans, selectedYear]);
 
+  // FIX: Explicitly type the accumulator in the `reduce` function to ensure correct type inference for `plansByMonth`.
   const plansByMonth = useMemo(() => {
-    return filteredPlans.reduce((acc, plan) => {
+    return filteredPlans.reduce((acc: Record<string, Plan[]>, plan) => {
       const monthName = MONTHS[plan.monthIndex];
       if (!acc[monthName]) {
         acc[monthName] = [];
       }
       acc[monthName].push(plan);
       return acc;
-    }, {} as Record<string, Plan[]>);
+    }, {});
   }, [filteredPlans]);
 
   const handleSelectPlan = (plan: Plan) => {
     setSelectedPlan(plan);
-    setDetailWorker(null);
   };
   
   const handleBackToDashboard = () => {
-    setSelectedPlan(null);
-    setDetailWorker(null);
-  };
-
-  const handleSelectWorker = (worker: User) => {
-    setDetailWorker(worker);
     setSelectedPlan(null);
   };
 
@@ -134,10 +125,6 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
       setNewPlanActivities([{ name: '' }]);
   }
 
-  if (detailWorker) {
-    return <WorkerDetailView worker={detailWorker} plans={plans} onBack={handleBackToDashboard} />;
-  }
-
   if (selectedPlan) {
     return (
       <PlanDetail 
@@ -145,18 +132,12 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         workers={workers}
         onBack={handleBackToDashboard}
         onAddActivities={handleAddActivitiesToPlan}
-        onSelectWorker={handleSelectWorker}
       />
     );
   }
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold text-dark-gray mb-4">Progreso General del Año {selectedYear}</h2>
-        <WorkerProgress plans={filteredPlans} users={workers} onSelectWorker={handleSelectWorker} />
-      </div>
-
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <h2 className="text-2xl font-bold text-dark-gray">Planes del Año {selectedYear}</h2>
         <div className="flex items-center gap-4">
