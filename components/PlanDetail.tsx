@@ -180,7 +180,15 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
                     Volver al Panel
                 </button>
                 <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h1 className="text-3xl font-bold text-primary">{plan.name}</h1>
+                    <h1 className="text-3xl font-bold text-primary flex items-center flex-wrap">
+                        <span>{plan.name}</span>
+                        {selectedActivity && (
+                            <>
+                                <span className="mx-2 text-gray-400 font-normal">/</span>
+                                <span className="text-dark-gray">{selectedActivity.name}</span>
+                            </>
+                        )}
+                    </h1>
                     <p className="text-dark-gray mt-1 capitalize">
                         {plan.month} | Fecha Límite: {new Date(plan.deadline).toLocaleDateString('es-ES')}
                     </p>
