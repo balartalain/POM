@@ -89,10 +89,12 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
   }
 
   const handleCreatePlan = () => {
-    if (!newPlanName || !newPlanDeadline || newPlanActivities.some(a => !a.name)) {
-        alert("Por favor, completa todos los campos para el plan y sus actividades.");
+    if (!newPlanName || !newPlanDeadline) {
+        alert("Por favor, completa el nombre del plan y la fecha límite.");
         return;
     }
+
+    const validActivities = newPlanActivities.filter(act => act.name.trim() !== '');
 
     const deadlineDate = new Date(`${newPlanDeadline}T23:59:59`);
     const monthName = deadlineDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
@@ -104,9 +106,9 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
       year: deadlineDate.getFullYear(),
       monthIndex: deadlineDate.getMonth(),
       deadline: deadlineDate.toISOString(),
-      activities: newPlanActivities.map((act, index) => ({
+      activities: validActivities.map((act, index) => ({
         id: Date.now() + index,
-        name: act.name,
+        name: act.name.trim(),
         completions: workers.map(w => ({
             workerId: w.id,
             status: ActivityStatus.PENDING,
