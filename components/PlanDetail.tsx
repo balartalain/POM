@@ -351,7 +351,6 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
                         </div>
                     </div>
                     <div className="p-6">
-                        <h4 className="font-bold text-xl text-primary mb-4">{selectedActivity.name}</h4>
                         <ul className="space-y-3">
                             {filteredWorkersForActivity.length > 0 ? (
                                 filteredWorkersForActivity.map(worker => {
