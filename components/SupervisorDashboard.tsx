@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { User, Plan, Activity, ActivityStatus, Role } from '../types';
 import { INITIAL_PLANS, USERS } from '../data/mockData';
 import Modal from './Modal';
+import ConfirmationModal from './ConfirmationModal';
 import { PlusIcon } from './Icons';
 import PlanCard from './PlanCard';
 import PlanDetail from './PlanDetail';
@@ -26,6 +27,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
   const [formErrors, setFormErrors] = useState<{ name?: string; deadline?: string }>({});
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [planToDeleteId, setPlanToDeleteId] = useState<number | null>(null);
 
   const workers = useMemo(() => USERS.filter(u => u.role === Role.WORKER), []);
 
@@ -168,9 +170,18 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
     setIsModalOpen(true);
   };
 
-  const handleDeletePlan = (planId: number) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este plan? Esta acción no se puede deshacer.')) {
-        setPlans(prevPlans => prevPlans.filter(p => p.id !== planId));
+  const handleOpenDeleteModal = (planId: number) => {
+    setPlanToDeleteId(planId);
+  };
+
+  const handleCloseDeleteModal = () => {
+    setPlanToDeleteId(null);
+  };
+
+  const handleConfirmDelete = () => {
+    if (planToDeleteId) {
+      setPlans(prevPlans => prevPlans.filter(p => p.id !== planToDeleteId));
+      handleCloseDeleteModal();
     }
   };
   
@@ -228,7 +239,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
                               userRole={supervisor.role}
                               onClick={() => handleSelectPlan(plan)}
                               onEdit={() => handleOpenEditModal(plan)}
-                              onDelete={() => handleDeletePlan(plan.id)}
+                              onDelete={() => handleOpenDeleteModal(plan.id)}
                             />
                         ))}
                     </div>
@@ -293,6 +304,20 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
           </button>
         </div>
       </Modal>
+
+      <ConfirmationModal
+        isOpen={planToDeleteId !== null}
+        onClose={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+        title="Confirmar Eliminación"
+        confirmText="Eliminar"
+      >
+        <p className="text-base">
+          ¿Estás seguro de que quieres eliminar el plan 
+          <span className="font-bold"> "{plans.find(p => p.id === planToDeleteId)?.name}"</span>?
+        </p>
+        <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>
+      </ConfirmationModal>
     </div>
   );
 };
