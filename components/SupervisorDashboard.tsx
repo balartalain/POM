@@ -7,6 +7,7 @@ import ConfirmationModal from './ConfirmationModal';
 import { PlusIcon } from './Icons';
 import PlanCard from './PlanCard';
 import PlanDetail from './PlanDetail';
+import { useToast } from '../hooks/useToast';
 
 interface SupervisorDashboardProps {
   supervisor: User;
@@ -28,6 +29,8 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [planToDeleteId, setPlanToDeleteId] = useState<number | null>(null);
+  
+  const { addToast } = useToast();
 
   const workers = useMemo(() => USERS.filter(u => u.role === Role.WORKER), []);
 
@@ -74,6 +77,15 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         return p;
     });
     setPlans(updatedPlans);
+    addToast('Actividades añadidas correctamente.', 'success');
+  };
+
+  const handleUpdatePlan = (updatedPlan: Plan) => {
+    const updatedPlans = plans.map(p => p.id === updatedPlan.id ? updatedPlan : p);
+    setPlans(updatedPlans);
+    if (selectedPlan && selectedPlan.id === updatedPlan.id) {
+        setSelectedPlan(updatedPlan);
+    }
   };
 
   const handleAddActivityField = () => {
@@ -135,6 +147,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
                   }
                 : p
         ));
+        addToast('Plan actualizado con éxito.', 'success');
     } else {
         const newPlan: Plan = {
           id: Date.now(),
@@ -146,6 +159,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
           activities: newActivitiesMapped,
         };
         setPlans(prevPlans => [newPlan, ...prevPlans]);
+        addToast('Nuevo plan creado con éxito.', 'success');
     }
     closeModal();
   };
@@ -182,6 +196,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
     if (planToDeleteId) {
       setPlans(prevPlans => prevPlans.filter(p => p.id !== planToDeleteId));
       handleCloseDeleteModal();
+      addToast('Plan eliminado correctamente.', 'success');
     }
   };
   
@@ -201,6 +216,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         workers={workers}
         onBack={handleBackToDashboard}
         onAddActivities={handleAddActivitiesToPlan}
+        onUpdatePlan={handleUpdatePlan}
       />
     );
   }

@@ -2,17 +2,20 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Plan, User, ActivityStatus, ActivityCompletion, Activity } from '../types';
 import Modal from './Modal';
+import ConfirmationModal from './ConfirmationModal';
 import ProgressBar from './ProgressBar';
-import { ArrowLeftIcon, PlusIcon, CheckCircleIcon, ClockIcon, DocumentCheckIcon, SearchIcon, ChevronDownIcon } from './Icons';
+import { ArrowLeftIcon, PlusIcon, CheckCircleIcon, ClockIcon, DocumentCheckIcon, SearchIcon, ChevronDownIcon, PencilIcon, TrashIcon } from './Icons';
+import { useToast } from '../hooks/useToast';
 
 interface PlanDetailProps {
   plan: Plan;
   workers: User[];
   onBack: () => void;
   onAddActivities: (planId: number, newActivities: Array<{name: string}>) => void;
+  onUpdatePlan: (updatedPlan: Plan) => void;
 }
 
-const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddActivities }) => {
+const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddActivities, onUpdatePlan }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newActivities, setNewActivities] = useState<Array<{name: string}>>([{ name: '' }]);
     const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -20,6 +23,12 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
     const [activeView, setActiveView] = useState<'activities' | 'workers'>('activities');
     const [workerListSearchTerm, setWorkerListSearchTerm] = useState('');
     const [expandedWorkerId, setExpandedWorkerId] = useState<number | null>(null);
+    
+    const [activityToDelete, setActivityToDelete] = useState<Activity | null>(null);
+    const [activityToEdit, setActivityToEdit] = useState<Activity | null>(null);
+    const [editedActivityName, setEditedActivityName] = useState('');
+    
+    const { addToast } = useToast();
 
 
     useEffect(() => {
@@ -62,7 +71,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
     }, [workerPlanProgress, workerListSearchTerm]);
 
     const toggleWorkerExpansion = (workerId: number) => {
-        setExpandedWorkerId(prevId => (prevId === workerId ? null : workerId));
+        setExpandedWorkerId(prevId => (prevId === workerId ? null : prevId));
     };
 
     const handleAddActivityField = () => {
@@ -80,7 +89,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
     };
 
     const handleSubmitNewActivities = () => {
-        if (newActivities.some(a => !a.name)) {
+        if (newActivities.some(a => !a.name.trim())) {
             alert("Por favor, completa todos los campos para las nuevas actividades.");
             return;
         }
@@ -97,6 +106,33 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
         if (!activity || activity.completions.length === 0) return 0;
         const completedCount = activity.completions.filter(c => c.status === ActivityStatus.COMPLETED).length;
         return (completedCount / activity.completions.length) * 100;
+    };
+
+    const handleOpenEditActivityModal = (activity: Activity) => {
+        setActivityToEdit(activity);
+        setEditedActivityName(activity.name);
+    };
+
+    const handleConfirmEditActivity = () => {
+        if (!activityToEdit || !editedActivityName.trim()) {
+            alert("El nombre de la actividad no puede estar vacío.");
+            return;
+        }
+        const updatedActivities = plan.activities.map(act =>
+            act.id === activityToEdit.id ? { ...act, name: editedActivityName.trim() } : act
+        );
+        onUpdatePlan({ ...plan, activities: updatedActivities });
+        setActivityToEdit(null);
+        setEditedActivityName('');
+        addToast('Actividad actualizada con éxito.', 'success');
+    };
+    
+    const handleConfirmDeleteActivity = () => {
+        if (!activityToDelete) return;
+        const updatedActivities = plan.activities.filter(act => act.id !== activityToDelete.id);
+        onUpdatePlan({ ...plan, activities: updatedActivities });
+        setActivityToDelete(null);
+        addToast('Actividad eliminada correctamente.', 'success');
     };
 
     const renderStatusBadge = (completion: ActivityCompletion, planDeadline: string) => {
@@ -189,16 +225,21 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
                             {plan.activities.length > 0 ? (
                                 <ul className="divide-y divide-gray-200">
                                     {plan.activities.map((activity) => (
-                                        <li key={activity.id}>
-                                            <button 
-                                                onClick={() => setSelectedActivity(activity)}
-                                                className="w-full text-left p-4 hover:bg-light-gray transition-colors"
-                                            >
+                                        <li key={activity.id} className="flex items-center justify-between p-4 hover:bg-light-gray transition-colors">
+                                            <button onClick={() => setSelectedActivity(activity)} className="flex-grow text-left pr-4">
                                                 <p className="font-medium text-dark-gray">{activity.name}</p>
                                                 <div className="mt-2">
                                                     <ProgressBar value={getActivityProgress(activity)} />
                                                 </div>
                                             </button>
+                                            <div className="flex items-center gap-1 pl-2">
+                                                <button onClick={(e) => { e.stopPropagation(); handleOpenEditActivityModal(activity); }} className="p-1.5 text-gray-400 hover:text-blue-700 rounded-full hover:bg-blue-100 transition-all duration-200" aria-label={`Editar actividad ${activity.name}`}>
+                                                    <PencilIcon className="w-5 h-5" />
+                                                </button>
+                                                <button onClick={(e) => { e.stopPropagation(); setActivityToDelete(activity); }} className="p-1.5 text-gray-400 hover:text-red-700 rounded-full hover:bg-red-100 transition-all duration-200" aria-label={`Eliminar actividad ${activity.name}`}>
+                                                    <TrashIcon className="w-5 h-5" />
+                                                </button>
+                                            </div>
                                         </li>
                                     ))}
                                 </ul>
@@ -348,6 +389,37 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
                     <button onClick={handleSubmitNewActivities} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark">Añadir Actividades</button>
                 </div>
             </Modal>
+            
+            <Modal isOpen={activityToEdit !== null} onClose={() => setActivityToEdit(null)} title="Editar Actividad">
+                <div>
+                    <label htmlFor="editActivityName" className="block text-sm font-medium text-gray-700">Nuevo nombre de la actividad</label>
+                    <input
+                        type="text"
+                        id="editActivityName"
+                        value={editedActivityName}
+                        onChange={(e) => setEditedActivityName(e.target.value)}
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
+                    />
+                </div>
+                <div className="mt-6 flex justify-end gap-3">
+                    <button onClick={() => setActivityToEdit(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                    <button onClick={handleConfirmEditActivity} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark">Guardar Cambios</button>
+                </div>
+            </Modal>
+
+            <ConfirmationModal
+                isOpen={activityToDelete !== null}
+                onClose={() => setActivityToDelete(null)}
+                onConfirm={handleConfirmDeleteActivity}
+                title="Confirmar Eliminación de Actividad"
+                confirmText="Eliminar"
+            >
+                <p className="text-base">
+                    ¿Estás seguro de que quieres eliminar la actividad
+                    <span className="font-bold"> "{activityToDelete?.name}"</span>?
+                </p>
+                <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>
+            </ConfirmationModal>
         </div>
     );
 };

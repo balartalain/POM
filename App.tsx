@@ -6,6 +6,8 @@ import Login from './components/Login';
 import SupervisorDashboard from './components/SupervisorDashboard';
 import WorkerDashboard from './components/WorkerDashboard';
 import Header from './components/Header';
+import { ToastProvider } from './contexts/ToastContext';
+import ToastContainer from './components/ToastContainer';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -42,7 +44,12 @@ const App: React.FC = () => {
     );
   }, [currentUser, handleLogin, handleLogout]);
 
-  return <>{renderContent}</>;
+  return (
+    <ToastProvider>
+      {renderContent}
+      <ToastContainer />
+    </ToastProvider>
+  );
 };
 
 export default App;
