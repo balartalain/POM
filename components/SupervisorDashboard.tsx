@@ -23,7 +23,8 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanDeadline, setNewPlanDeadline] = useState('');
   const [newPlanActivities, setNewPlanActivities] = useState<Array<{name: string}>>([{ name: '' }]);
-  
+  const [formErrors, setFormErrors] = useState<{ name?: string; deadline?: string }>({});
+
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   const workers = useMemo(() => USERS.filter(u => u.role === Role.WORKER), []);
@@ -88,9 +89,20 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
       setNewPlanActivities(updated);
   }
 
+  const validateForm = () => {
+    const errors: { name?: string; deadline?: string } = {};
+    if (!newPlanName.trim()) {
+      errors.name = "El nombre del plan es obligatorio.";
+    }
+    if (!newPlanDeadline) {
+      errors.deadline = "La fecha límite es obligatoria.";
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleSavePlan = () => {
-    if (!newPlanName || !newPlanDeadline) {
-        alert("Por favor, completa el nombre del plan y la fecha límite.");
+    if (!validateForm()) {
         return;
     }
 
@@ -141,6 +153,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
     setNewPlanName('');
     setNewPlanDeadline('');
     setNewPlanActivities([{ name: '' }]);
+    setFormErrors({});
     setIsModalOpen(true);
   };
 
@@ -151,6 +164,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
     const formattedDate = deadlineDate.toISOString().split('T')[0];
     setNewPlanDeadline(formattedDate);
     setNewPlanActivities([{ name: '' }]);
+    setFormErrors({});
     setIsModalOpen(true);
   };
 
@@ -166,6 +180,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
       setNewPlanName('');
       setNewPlanDeadline('');
       setNewPlanActivities([{ name: '' }]);
+      setFormErrors({});
   }
 
   if (selectedPlan) {
@@ -230,11 +245,25 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         <div className="space-y-4">
           <div>
             <label htmlFor="planName" className="block text-sm font-medium text-gray-700">Nombre del Plan</label>
-            <input type="text" id="planName" value={newPlanName} onChange={e => setNewPlanName(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"/>
+            <input type="text" id="planName" value={newPlanName} 
+              onChange={e => {
+                setNewPlanName(e.target.value);
+                if (formErrors.name) setFormErrors(prev => ({...prev, name: undefined}));
+              }} 
+              className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary ${formErrors.name ? 'border-red-500' : 'border-gray-300'}`}
+            />
+            {formErrors.name && <p className="text-sm text-red-600 mt-1">{formErrors.name}</p>}
           </div>
           <div>
             <label htmlFor="planDeadline" className="block text-sm font-medium text-gray-700">Fecha Límite</label>
-            <input type="date" id="planDeadline" value={newPlanDeadline} onChange={e => setNewPlanDeadline(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"/>
+            <input type="date" id="planDeadline" value={newPlanDeadline} 
+              onChange={e => {
+                setNewPlanDeadline(e.target.value)
+                if (formErrors.deadline) setFormErrors(prev => ({...prev, deadline: undefined}));
+              }} 
+              className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary ${formErrors.deadline ? 'border-red-500' : 'border-gray-300'}`}
+            />
+            {formErrors.deadline && <p className="text-sm text-red-600 mt-1">{formErrors.deadline}</p>}
           </div>
           <h3 className="text-lg font-medium text-gray-900 border-t pt-4">
             {editingPlan ? 'Añadir Nuevas Actividades' : 'Actividades'}
