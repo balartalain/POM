@@ -19,6 +19,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanDeadline, setNewPlanDeadline] = useState('');
   const [newPlanActivities, setNewPlanActivities] = useState<Array<{name: string}>>([{ name: '' }]);
@@ -33,7 +34,6 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
       .sort((a, b) => a.monthIndex - b.monthIndex);
   }, [plans, selectedYear]);
 
-  // FIX: Explicitly type the accumulator in the `reduce` function to ensure correct type inference for `plansByMonth`.
   const plansByMonth = useMemo(() => {
     return filteredPlans.reduce((acc: Record<string, Plan[]>, plan) => {
       const monthName = MONTHS[plan.monthIndex];
@@ -88,40 +88,81 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
       setNewPlanActivities(updated);
   }
 
-  const handleCreatePlan = () => {
+  const handleSavePlan = () => {
     if (!newPlanName || !newPlanDeadline) {
         alert("Por favor, completa el nombre del plan y la fecha límite.");
         return;
     }
 
     const validActivities = newPlanActivities.filter(act => act.name.trim() !== '');
-
-    const deadlineDate = new Date(`${newPlanDeadline}T23:59:59`);
-    const monthName = deadlineDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
-    
-    const newPlan: Plan = {
-      id: Date.now(),
-      name: newPlanName,
-      month: monthName,
-      year: deadlineDate.getFullYear(),
-      monthIndex: deadlineDate.getMonth(),
-      deadline: deadlineDate.toISOString(),
-      activities: validActivities.map((act, index) => ({
+    const newActivitiesMapped = validActivities.map((act, index) => ({
         id: Date.now() + index,
         name: act.name.trim(),
         completions: workers.map(w => ({
             workerId: w.id,
             status: ActivityStatus.PENDING,
         })),
-      })),
-    };
+    }));
 
-    setPlans(prevPlans => [newPlan, ...prevPlans]);
+    const deadlineDate = new Date(`${newPlanDeadline}T23:59:59`);
+    const monthName = deadlineDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+
+    if (editingPlan) {
+        setPlans(prevPlans => prevPlans.map(p =>
+            p.id === editingPlan.id
+                ? {
+                    ...p,
+                    name: newPlanName,
+                    deadline: deadlineDate.toISOString(),
+                    month: monthName,
+                    year: deadlineDate.getFullYear(),
+                    monthIndex: deadlineDate.getMonth(),
+                    activities: [...p.activities, ...newActivitiesMapped],
+                  }
+                : p
+        ));
+    } else {
+        const newPlan: Plan = {
+          id: Date.now(),
+          name: newPlanName,
+          month: monthName,
+          year: deadlineDate.getFullYear(),
+          monthIndex: deadlineDate.getMonth(),
+          deadline: deadlineDate.toISOString(),
+          activities: newActivitiesMapped,
+        };
+        setPlans(prevPlans => [newPlan, ...prevPlans]);
+    }
     closeModal();
+  };
+  
+  const handleOpenCreateModal = () => {
+    setEditingPlan(null);
+    setNewPlanName('');
+    setNewPlanDeadline('');
+    setNewPlanActivities([{ name: '' }]);
+    setIsModalOpen(true);
+  };
+
+  const handleOpenEditModal = (planToEdit: Plan) => {
+    setEditingPlan(planToEdit);
+    setNewPlanName(planToEdit.name);
+    const deadlineDate = new Date(planToEdit.deadline);
+    const formattedDate = deadlineDate.toISOString().split('T')[0];
+    setNewPlanDeadline(formattedDate);
+    setNewPlanActivities([{ name: '' }]);
+    setIsModalOpen(true);
+  };
+
+  const handleDeletePlan = (planId: number) => {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este plan? Esta acción no se puede deshacer.')) {
+        setPlans(prevPlans => prevPlans.filter(p => p.id !== planId));
+    }
   };
   
   const closeModal = () => {
       setIsModalOpen(false);
+      setEditingPlan(null);
       setNewPlanName('');
       setNewPlanDeadline('');
       setNewPlanActivities([{ name: '' }]);
@@ -150,7 +191,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
                 </select>
             </div>
             <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={handleOpenCreateModal}
             className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
             >
             <PlusIcon className="w-5 h-5"/>
@@ -167,10 +208,12 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {monthPlans.map(plan => (
                             <PlanCard 
-                            key={plan.id} 
-                            plan={plan} 
-                            userRole={supervisor.role}
-                            onClick={() => handleSelectPlan(plan)}
+                              key={plan.id} 
+                              plan={plan} 
+                              userRole={supervisor.role}
+                              onClick={() => handleSelectPlan(plan)}
+                              onEdit={() => handleOpenEditModal(plan)}
+                              onDelete={() => handleDeletePlan(plan.id)}
                             />
                         ))}
                     </div>
@@ -183,7 +226,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={closeModal} title="Crear Nuevo Plan Mensual">
+      <Modal isOpen={isModalOpen} onClose={closeModal} title={editingPlan ? "Editar Plan" : "Crear Nuevo Plan Mensual"}>
         <div className="space-y-4">
           <div>
             <label htmlFor="planName" className="block text-sm font-medium text-gray-700">Nombre del Plan</label>
@@ -193,7 +236,9 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
             <label htmlFor="planDeadline" className="block text-sm font-medium text-gray-700">Fecha Límite</label>
             <input type="date" id="planDeadline" value={newPlanDeadline} onChange={e => setNewPlanDeadline(e.target.value)} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"/>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 border-t pt-4">Actividades</h3>
+          <h3 className="text-lg font-medium text-gray-900 border-t pt-4">
+            {editingPlan ? 'Añadir Nuevas Actividades' : 'Actividades'}
+          </h3>
           {newPlanActivities.map((activity, index) => (
             <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
               <input 
@@ -214,7 +259,9 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <button onClick={closeModal} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
-          <button onClick={handleCreatePlan} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark">Crear Plan</button>
+          <button onClick={handleSavePlan} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark">
+            {editingPlan ? 'Guardar Cambios' : 'Crear Plan'}
+          </button>
         </div>
       </Modal>
     </div>
