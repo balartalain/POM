@@ -22,7 +22,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
     const [workerSearchTerm, setWorkerSearchTerm] = useState('');
     const [activeView, setActiveView] = useState<'activities' | 'workers'>('activities');
     const [workerListSearchTerm, setWorkerListSearchTerm] = useState('');
-    const [expandedWorkerId, setExpandedWorkerId] = useState<number | null>(null);
+    const [expandedWorkerIds, setExpandedWorkerIds] = useState<Set<number>>(new Set());
     
     const [activityToDelete, setActivityToDelete] = useState<Activity | null>(null);
     const [activityToEdit, setActivityToEdit] = useState<Activity | null>(null);
@@ -35,7 +35,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
         // Reset to activity list view when plan changes
         setSelectedActivity(null);
         setActiveView('activities');
-        setExpandedWorkerId(null);
+        setExpandedWorkerIds(new Set());
     }, [plan.id]);
     
     const filteredWorkersForActivity = useMemo(() => {
@@ -71,7 +71,15 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
     }, [workerPlanProgress, workerListSearchTerm]);
 
     const toggleWorkerExpansion = (workerId: number) => {
-        setExpandedWorkerId(prevId => (prevId === workerId ? null : prevId));
+        setExpandedWorkerIds(prevIds => {
+            const newIds = new Set(prevIds);
+            if (newIds.has(workerId)) {
+                newIds.delete(workerId);
+            } else {
+                newIds.add(workerId);
+            }
+            return newIds;
+        });
     };
 
     const handleAddActivityField = () => {
@@ -277,7 +285,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
                             <div className="p-4 sm:p-6 space-y-2">
                                 {filteredWorkerPlanProgress.length > 0 ? (
                                     filteredWorkerPlanProgress.map(({ worker, completed, total, progress }) => {
-                                        const isExpanded = expandedWorkerId === worker.id;
+                                        const isExpanded = expandedWorkerIds.has(worker.id);
                                         return (
                                         <div key={worker.id} className="bg-gray-50 rounded-lg border overflow-hidden">
                                             <button 
@@ -305,115 +313,89 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
                                                             
                                                             return (
                                                                 <li key={activity.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-2 bg-light-gray rounded-md border">
-                                                                    <span className="text-sm text-dark-gray mb-2 sm:mb-0 flex-1 pr-2">{activity.name}</span>
+                                                                    <p className="text-sm text-dark-gray flex-grow">{activity.name}</p>
                                                                     {renderStatusBadge(completion, plan.deadline)}
                                                                 </li>
                                                             );
                                                         })}
-                                                        {plan.activities.filter(a => a.completions.some(c => c.workerId === worker.id)).length === 0 && (
-                                                            <p className="text-center text-sm text-gray-500 py-2">No hay actividades asignadas a este trabajador en este plan.</p>
-                                                        )}
                                                     </ul>
                                                 </div>
                                             )}
                                         </div>
-                                    )})
+                                        )
+                                    })
                                 ) : (
-                                    <p className="text-center text-dark-gray py-4">No se encontraron trabajadores con ese nombre.</p>
+                                    <p className="p-6 text-center text-dark-gray">No hay trabajadores asignados a este plan.</p>
                                 )}
-                                { workers.length === 0 && <p className="text-center text-dark-gray py-4">No hay trabajadores asignados a este plan.</p>}
                             </div>
                         </div>
                     )}
                 </>
             ) : (
-                // Worker Progress for Selected Activity View
-                <div className="bg-white rounded-lg shadow-md overflow-hidden animate-fade-in">
-                    <div className="p-4 bg-gray-50 border-b">
-                         <button onClick={() => setSelectedActivity(null)} className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline mb-4">
-                            <ArrowLeftIcon className="w-5 h-5" />
-                            Volver a Actividades
+                <div className="bg-white rounded-lg shadow-md animate-fade-in">
+                    <div className="p-4 bg-gray-50 border-b flex justify-between items-center flex-wrap gap-3">
+                        <button onClick={() => setSelectedActivity(null)} className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+                            <ArrowLeftIcon className="w-4 h-4" />
+                            Ver todas las actividades
                         </button>
-                        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3">
-                            <h3 className="text-lg font-semibold text-dark-gray">Progreso por Trabajador</h3>
-                            <div className="relative w-full sm:w-56">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <SearchIcon className="h-5 w-5 text-gray-400" />
-                                </div>
-                                <input
-                                    type="text"
-                                    placeholder="Buscar trabajador..."
-                                    value={workerSearchTerm}
-                                    onChange={(e) => setWorkerSearchTerm(e.target.value)}
-                                    className="block w-full pl-10 pr-3 py-1.5 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
-                                />
+                         <div className="relative w-full sm:w-64">
+                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <SearchIcon className="h-5 w-5 text-gray-400" />
                             </div>
+                            <input
+                                type="text"
+                                placeholder="Buscar trabajador..."
+                                value={workerSearchTerm}
+                                onChange={(e) => setWorkerSearchTerm(e.target.value)}
+                                className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
+                            />
                         </div>
                     </div>
-                    <div className="p-6">
-                        <ul className="space-y-3">
-                            {filteredWorkersForActivity.length > 0 ? (
-                                filteredWorkersForActivity.map(worker => {
-                                    const completion = selectedActivity.completions.find(c => c.workerId === worker.id);
-                                    return (
-                                        <li key={worker.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border">
-                                            <span className="font-medium text-dark-gray">{worker.name}</span>
-                                            {completion ? renderStatusBadge(completion, plan.deadline) : <span className="text-gray-400 text-sm">N/A</span>}
-                                        </li>
-                                    )
-                                })
-                            ) : (
-                                <p className="text-center text-dark-gray py-4">No se encontraron trabajadores con ese nombre.</p>
-                            )}
+                    {filteredWorkersForActivity.length > 0 ? (
+                        <ul className="divide-y divide-gray-200">
+                            {filteredWorkersForActivity.map(worker => {
+                                const completion = selectedActivity.completions.find(c => c.workerId === worker.id);
+                                if (!completion) return null;
+                                return (
+                                <li key={worker.id} className="flex items-center justify-between p-4">
+                                    <span className="font-medium text-dark-gray">{worker.name}</span>
+                                    {renderStatusBadge(completion, plan.deadline)}
+                                </li>
+                                );
+                            })}
                         </ul>
-                    </div>
+                    ) : (
+                        <p className="p-6 text-center text-dark-gray">No se encontraron trabajadores que coincidan con la búsqueda para esta actividad.</p>
+                    )}
                 </div>
             )}
-
-            <Modal isOpen={isModalOpen} onClose={closeModal} title={`Añadir Actividades a "${plan.name}"`}>
+            
+            <Modal isOpen={isModalOpen} onClose={closeModal} title="Añadir Nuevas Actividades al Plan">
                 <div className="space-y-4">
-                    <h3 className="text-lg font-medium text-gray-900">Nuevas Actividades</h3>
-                    {newActivities.map((activity, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
-                            <input 
-                                type="text" 
-                                placeholder="Descripción de la actividad" 
-                                value={activity.name}
-                                onChange={e => handleActivityChange(index, e.target.value)}
-                                className="flex-grow mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
-                            />
-                            {newActivities.length > 1 && (
-                                <button onClick={() => handleRemoveActivityField(index)} className="text-red-500 hover:text-red-700 p-1 text-xl font-bold">
-                                    &times;
-                                </button>
-                            )}
-                        </div>
-                    ))}
-                    <button onClick={handleAddActivityField} className="text-sm text-primary hover:underline">+ Añadir otra actividad</button>
+                {newActivities.map((activity, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                    <input
+                        type="text"
+                        placeholder={`Nombre de actividad ${index + 1}`}
+                        value={activity.name}
+                        onChange={e => handleActivityChange(index, e.target.value)}
+                        className="flex-grow mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
+                    />
+                    {newActivities.length > 1 && (
+                        <button onClick={() => handleRemoveActivityField(index)} className="text-red-500 hover:text-red-700 p-1 text-xl font-bold">
+                        &times;
+                        </button>
+                    )}
+                    </div>
+                ))}
+                <button onClick={handleAddActivityField} className="text-sm text-primary hover:underline">+ Añadir otra actividad</button>
                 </div>
                 <div className="mt-6 flex justify-end gap-3">
-                    <button onClick={closeModal} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
-                    <button onClick={handleSubmitNewActivities} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark">Añadir Actividades</button>
+                <button onClick={closeModal} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                <button onClick={handleSubmitNewActivities} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark">Añadir Actividades</button>
                 </div>
             </Modal>
             
-            <Modal isOpen={activityToEdit !== null} onClose={() => setActivityToEdit(null)} title="Editar Actividad">
-                <div>
-                    <label htmlFor="editActivityName" className="block text-sm font-medium text-gray-700">Nuevo nombre de la actividad</label>
-                    <input
-                        type="text"
-                        id="editActivityName"
-                        value={editedActivityName}
-                        onChange={(e) => setEditedActivityName(e.target.value)}
-                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
-                    />
-                </div>
-                <div className="mt-6 flex justify-end gap-3">
-                    <button onClick={() => setActivityToEdit(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
-                    <button onClick={handleConfirmEditActivity} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark">Guardar Cambios</button>
-                </div>
-            </Modal>
-
             <ConfirmationModal
                 isOpen={activityToDelete !== null}
                 onClose={() => setActivityToDelete(null)}
@@ -421,12 +403,31 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
                 title="Confirmar Eliminación de Actividad"
                 confirmText="Eliminar"
             >
-                <p className="text-base">
-                    ¿Estás seguro de que quieres eliminar la actividad
-                    <span className="font-bold"> "{activityToDelete?.name}"</span>?
-                </p>
-                <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>
+                <p>¿Estás seguro de que quieres eliminar la actividad <strong>"{activityToDelete?.name}"</strong>?</p>
+                <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer y eliminará el progreso de todos los trabajadores para esta actividad.</p>
             </ConfirmationModal>
+
+            <Modal
+                isOpen={activityToEdit !== null}
+                onClose={() => setActivityToEdit(null)}
+                title="Editar Actividad"
+            >
+                <div>
+                <label htmlFor="activityName" className="block text-sm font-medium text-gray-700">Nombre de la Actividad</label>
+                <input
+                    type="text"
+                    id="activityName"
+                    value={editedActivityName}
+                    onChange={(e) => setEditedActivityName(e.target.value)}
+                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
+                />
+                </div>
+                <div className="mt-6 flex justify-end gap-3">
+                <button onClick={() => setActivityToEdit(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
+                <button onClick={handleConfirmEditActivity} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark">Guardar Cambios</button>
+                </div>
+            </Modal>
+
         </div>
     );
 };
