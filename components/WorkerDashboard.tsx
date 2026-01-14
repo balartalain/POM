@@ -32,7 +32,7 @@ const WorkerDashboard: React.FC<WorkerDashboardProps> = ({ worker }) => {
       }
       acc[monthName].push(plan);
       return acc;
-    }, {});
+    }, {} as Record<string, Plan[]>);
   }, [filteredPlans]);
 
   const handleSelectPlan = (plan: Plan) => {

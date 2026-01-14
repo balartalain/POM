@@ -7,8 +7,6 @@ import ConfirmationModal from './ConfirmationModal';
 import { PlusIcon } from './Icons';
 import PlanCard from './PlanCard';
 import PlanDetail from './PlanDetail';
-import WorkerDetailView from './WorkerDetailView';
-import ProgressBar from './ProgressBar';
 import { useToast } from '../hooks/useToast';
 
 interface SupervisorDashboardProps {
@@ -21,7 +19,6 @@ const YEARS = Array.from({length: 5}, (_, i) => new Date().getFullYear() - 2 + i
 const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor }) => {
   const [plans, setPlans] = useState<Plan[]>(INITIAL_PLANS);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  const [selectedWorker, setSelectedWorker] = useState<User | null>(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
@@ -32,7 +29,6 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [planToDeleteId, setPlanToDeleteId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<'plans' | 'workers'>('plans');
   
   const { addToast } = useToast();
 
@@ -45,6 +41,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
   }, [plans, selectedYear]);
 
   const plansByMonth = useMemo(() => {
+    // FIX: Explicitly cast the initial value of reduce to ensure `plansByMonth` is correctly typed.
     return filteredPlans.reduce((acc: Record<string, Plan[]>, plan) => {
       const monthName = MONTHS[plan.monthIndex];
       if (!acc[monthName]) {
@@ -52,37 +49,15 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
       }
       acc[monthName].push(plan);
       return acc;
-    }, {});
+    }, {} as Record<string, Plan[]>);
   }, [filteredPlans]);
   
-  const workerGlobalProgress = useMemo(() => {
-      return workers.map(worker => {
-          const allCompletions = plans
-              .flatMap(p => p.activities)
-              .map(a => a.completions.find(c => c.workerId === worker.id))
-              .filter((c): c is NonNullable<typeof c> => c !== undefined);
-          
-          const total = allCompletions.length;
-          if (total === 0) {
-              return { worker, completed: 0, total: 0, progress: 0 };
-          }
-          const completed = allCompletions.filter(c => c.status === ActivityStatus.COMPLETED).length;
-          const progress = (completed / total) * 100;
-          return { worker, completed, total, progress };
-      });
-  }, [plans, workers]);
-
   const handleSelectPlan = (plan: Plan) => {
     setSelectedPlan(plan);
   };
   
-  const handleSelectWorker = (worker: User) => {
-    setSelectedWorker(worker);
-  }
-  
   const handleBackToDashboard = () => {
     setSelectedPlan(null);
-    setSelectedWorker(null);
   };
 
   const handleAddActivitiesToPlan = (planId: number, activitiesToAdd: Array<{name: string}>) => {
@@ -246,118 +221,56 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
       />
     );
   }
-  
-  if (selectedWorker) {
-      return (
-          <WorkerDetailView
-              worker={selectedWorker}
-              plans={plans.filter(p => p.activities.some(a => a.completions.some(c => c.workerId === selectedWorker.id)))}
-              onBack={handleBackToDashboard}
-          />
-      )
-  }
 
   return (
     <div className="space-y-8">
-        <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-                <button
-                    onClick={() => setActiveTab('plans')}
-                    className={ activeTab === 'plans'
-                        ? 'border-primary text-primary whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm'
-                    }
-                >
-                    Planes
-                </button>
-                <button
-                    onClick={() => setActiveTab('workers')}
-                    className={ activeTab === 'workers'
-                        ? 'border-primary text-primary whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm'
-                    }
-                >
-                    Trabajadores
-                </button>
-            </nav>
-        </div>
-        
-        {activeTab === 'plans' && (
-            <div className="animate-fade-in space-y-8">
-                <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                    <h2 className="text-2xl font-bold text-dark-gray">Planes del Año {selectedYear}</h2>
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                            <label htmlFor="year-select" className="text-sm font-medium text-dark-gray">Año:</label>
-                            <select id="year-select" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
-                                {YEARS.map(year => <option key={year} value={year}>{year}</option>)}
-                            </select>
-                        </div>
-                        <button
-                        onClick={handleOpenCreateModal}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
-                        >
-                        <PlusIcon className="w-5 h-5"/>
-                        Añadir Nuevo Plan
-                        </button>
+        <div className="animate-fade-in space-y-8">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                <h2 className="text-2xl font-bold text-dark-gray">Planes del Año {selectedYear}</h2>
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                        <label htmlFor="year-select" className="text-sm font-medium text-dark-gray">Año:</label>
+                        <select id="year-select" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
+                            {YEARS.map(year => <option key={year} value={year}>{year}</option>)}
+                        </select>
                     </div>
+                    <button
+                    onClick={handleOpenCreateModal}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+                    >
+                    <PlusIcon className="w-5 h-5"/>
+                    Añadir Nuevo Plan
+                    </button>
                 </div>
-
-                {filteredPlans.length > 0 ? (
-                    <div className="space-y-8">
-                        {Object.entries(plansByMonth).map(([month, monthPlans]) => (
-                            <div key={month}>
-                                <h3 className="text-xl font-semibold text-dark-gray mb-3 pb-2 border-b">{month}</h3>
-                                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                    {monthPlans.map(plan => (
-                                        <PlanCard 
-                                          key={plan.id} 
-                                          plan={plan} 
-                                          userRole={supervisor.role}
-                                          onClick={() => handleSelectPlan(plan)}
-                                          onEdit={() => handleOpenEditModal(plan)}
-                                          onDelete={() => handleOpenDeleteModal(plan.id)}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center text-dark-gray p-8 bg-white rounded-lg shadow">
-                      <p>No se encontraron planes para el año {selectedYear}.</p>
-                    </div>
-                )}
             </div>
-        )}
-        
-        {activeTab === 'workers' && (
-            <div className="animate-fade-in space-y-8">
-                <h2 className="text-2xl font-bold text-dark-gray">Progreso de Trabajadores</h2>
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {workerGlobalProgress.map(({ worker, completed, total, progress }) => (
-                        <button 
-                            key={worker.id}
-                            onClick={() => handleSelectWorker(worker)}
-                            className="p-4 sm:p-6 rounded-lg shadow-md bg-white text-left transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-                            aria-label={`Ver detalles de ${worker.name}`}
-                        >
-                           <h3 className="text-lg font-bold text-primary truncate">{worker.name}</h3>
-                           <p className="text-sm text-dark-gray mb-4">Rol: {worker.role}</p>
 
-                           <div className="mt-auto">
-                                <div className="flex justify-between items-center text-sm text-dark-gray mb-1">
-                                    <span>Progreso Global</span>
-                                    <span>{completed} / {total}</span>
-                                </div>
-                                <ProgressBar value={progress} />
+            {filteredPlans.length > 0 ? (
+                <div className="space-y-8">
+                    {Object.entries(plansByMonth).map(([month, monthPlans]) => (
+                        <div key={month}>
+                            <h3 className="text-xl font-semibold text-dark-gray mb-3 pb-2 border-b">{month}</h3>
+                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                                {monthPlans.map(plan => (
+                                    <PlanCard 
+                                      key={plan.id} 
+                                      plan={plan} 
+                                      userRole={supervisor.role}
+                                      onClick={() => handleSelectPlan(plan)}
+                                      onEdit={() => handleOpenEditModal(plan)}
+                                      onDelete={() => handleOpenDeleteModal(plan.id)}
+                                    />
+                                ))}
                             </div>
-                        </button>
+                        </div>
                     ))}
                 </div>
-            </div>
-        )}
-
+            ) : (
+                <div className="text-center text-dark-gray p-8 bg-white rounded-lg shadow">
+                  <p>No se encontraron planes para el año {selectedYear}.</p>
+                </div>
+            )}
+        </div>
+        
       <Modal isOpen={isModalOpen} onClose={closeModal} title={editingPlan ? "Editar Plan" : "Crear Nuevo Plan Mensual"}>
         <div className="space-y-4">
           <div>
