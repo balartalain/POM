@@ -1,5 +1,6 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import Pusher from 'pusher-js';
 import { User, Role } from './types';
 import { USERS } from './data/mockData';
 import Login from './components/Login';
@@ -11,6 +12,25 @@ import ToastContainer from './components/ToastContainer';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+
+  useEffect(() => {
+     console.log('Entrando a la app');
+    const pusher = new Pusher('b23e7b8bf6ab3b8b19ff', {
+      cluster: 'us2',
+    });
+
+    // 2. Suscribirse al canal (usando la lógica de recintos que hablamos)
+    const channel = pusher.subscribe('plan');
+
+    channel.bind('update-plan', (data) => {      
+      console.log('Datos recibidos desde Django:', data);
+    });
+
+    // 4. Limpieza: Desconectar al desmontar el componente
+    return () => {
+      pusher.unsubscribe('plan');
+    };
+  }, []);
 
   const handleLogin = useCallback((username: string): boolean => {
     const user = USERS.find(u => u.username.toLowerCase() === username.toLowerCase());

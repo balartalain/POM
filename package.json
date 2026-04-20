@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "pusher-js": "^8.5.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },
