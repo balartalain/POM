@@ -138,7 +138,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack, onAddActivities }
   ], []);
 
   return (
-    <div className="space-y-6">
+    <div>
       <div>
         <button onClick={onBack} className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline mb-4">
           <ArrowLeftIcon className="w-5 h-5" />
