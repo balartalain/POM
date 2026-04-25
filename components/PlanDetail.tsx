@@ -6,6 +6,7 @@ import 'react-tabulator/lib/css/tabulator_bootstrap3.min.css';
 import { Plan, User } from '../types';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
+import Drawer from './Drawer';
 import { ArrowLeftIcon, PlusIcon } from './Icons';
 import { useToast } from '../hooks/useToast';
 import { fakeActivities, FakeActivity } from '../data/fakeActivities';
@@ -209,50 +210,41 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack, onAddActivities }
         <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>
       </ConfirmationModal>
 
-      <Modal
+      <Drawer
         isOpen={activityToView !== null}
         onClose={() => setActivityToView(null)}
-        title={`Completaciones — ${activityToView?.titulo ?? ''}`}
+        title={`Progreso — ${activityToView?.titulo ?? ''}`}
       >
-        {activityToView?.completions.length ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  <th className="px-4 py-2">Empleado</th>
-                  <th className="px-4 py-2">Fecha completada</th>
-                  <th className="px-4 py-2">Evidencia</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
+        {activityToView && (
+          <>
+            <p className="text-sm text-gray-500 mb-4">{activityToView.nombre}</p>
+            {activityToView.completions.length ? (
+              <div className="space-y-3">
                 {activityToView.completions.map((c, i) => (
-                  <tr key={i} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 font-medium text-dark-gray">{c.workerName}</td>
-                    <td className="px-4 py-2 text-gray-600">
-                      {new Date(c.completedAt).toLocaleDateString('es-ES')}
-                    </td>
-                    <td className="px-4 py-2">
-                      <a
-                        href={c.evidenceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline flex items-center gap-1"
-                      >
-                        Ver documento
-                      </a>
-                    </td>
-                  </tr>
+                  <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 border border-gray-100">
+                    <div>
+                      <p className="font-medium text-gray-800 text-sm">{c.workerName}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        {new Date(c.completedAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <a
+                      href={c.evidenceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary font-medium hover:underline whitespace-nowrap ml-4"
+                    >
+                      Ver evidencia
+                    </a>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-center text-dark-gray py-4">Ningún empleado ha completado esta actividad aún.</p>
+              </div>
+            ) : (
+              <p className="text-center text-gray-400 py-8 text-sm">Ningún empleado ha completado esta actividad aún.</p>
+            )}
+          </>
         )}
-        <div className="mt-6 flex justify-end">
-          <button onClick={() => setActivityToView(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cerrar</button>
-        </div>
-      </Modal>
+      </Drawer>
 
       <Modal
         isOpen={activityToEdit !== null}
