@@ -22,11 +22,17 @@ const progressFormatter = (cell: any) => {
   const val: number = cell.getValue();
   const color = val < 40 ? '#ef4444' : val < 75 ? '#eab308' : '#22c55e';
   return `
-    <div style="display:flex;flex-direction:column;gap:2px;min-width:80px">
-      <div style="background:#e5e7eb;border-radius:9999px;height:10px;overflow:hidden">
+    <div style="display:flex;flex-direction:column;gap:4px;min-width:80px">
+      <div style="background:#e5e7eb;border-radius:9999px;height:5px;overflow:hidden">
         <div style="width:${val}%;background:${color};height:100%;border-radius:9999px;transition:width 0.3s"></div>
       </div>
-      <span style="font-size:0.7rem;color:#6b7280">${val}%</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:0.7rem;color:#6b7280">${val}%</span>
+        <a
+          data-action="view"
+          style="font-size:0.7rem;color:#15803d;text-decoration:underline;cursor:pointer;white-space:nowrap"
+        >Ver progreso</a>
+      </div>
     </div>
   `;
 };
@@ -54,6 +60,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack, onAddActivities }
   const [activityToDelete, setActivityToDelete] = useState<FakeActivity | null>(null);
   const [activityToEdit, setActivityToEdit] = useState<FakeActivity | null>(null);
   const [editedActivityName, setEditedActivityName] = useState('');
+  const [activityToView, setActivityToView] = useState<FakeActivity | null>(null);
 
   const { addToast } = useToast();
 
@@ -110,13 +117,14 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack, onAddActivities }
     const row = cell.getData() as FakeActivity;
     if (action === 'edit') handleOpenEditActivityModal(row);
     if (action === 'delete') setActivityToDelete(row);
+    if (action === 'view') setActivityToView(row);
   };
 
   const columns: ColumnDefinition[] = useMemo(() => [
     { title: 'Título',       field: 'titulo',    widthGrow: 2, headerSort: true },
     { title: 'Nombre',       field: 'nombre',    widthGrow: 2, headerSort: true },
     { title: 'Fecha Creada', field: 'createdAt', widthGrow: 1, headerSort: true, formatter: dateFormatter },
-    { title: 'Progreso',     field: 'progreso',  widthGrow: 2, headerSort: true, formatter: progressFormatter },
+    { title: 'Progreso',     field: 'progreso',  widthGrow: 2, headerSort: true, formatter: progressFormatter, cellClick: handleCellClick },
     {
       title: 'Acciones',
       field: 'id',
@@ -200,6 +208,51 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack, onAddActivities }
         <p>¿Estás seguro de que quieres eliminar la actividad <strong>"{activityToDelete?.titulo}"</strong>?</p>
         <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>
       </ConfirmationModal>
+
+      <Modal
+        isOpen={activityToView !== null}
+        onClose={() => setActivityToView(null)}
+        title={`Completaciones — ${activityToView?.titulo ?? ''}`}
+      >
+        {activityToView?.completions.length ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-2">Empleado</th>
+                  <th className="px-4 py-2">Fecha completada</th>
+                  <th className="px-4 py-2">Evidencia</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {activityToView.completions.map((c, i) => (
+                  <tr key={i} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 font-medium text-dark-gray">{c.workerName}</td>
+                    <td className="px-4 py-2 text-gray-600">
+                      {new Date(c.completedAt).toLocaleDateString('es-ES')}
+                    </td>
+                    <td className="px-4 py-2">
+                      <a
+                        href={c.evidenceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1"
+                      >
+                        Ver documento
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="text-center text-dark-gray py-4">Ningún empleado ha completado esta actividad aún.</p>
+        )}
+        <div className="mt-6 flex justify-end">
+          <button onClick={() => setActivityToView(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cerrar</button>
+        </div>
+      </Modal>
 
       <Modal
         isOpen={activityToEdit !== null}
