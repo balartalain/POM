@@ -4,7 +4,6 @@ import { ReactTabulator, ColumnDefinition } from 'react-tabulator';
 import 'react-tabulator/lib/styles.css';
 import 'react-tabulator/lib/css/tabulator_bootstrap3.min.css';
 import { Plan, User, ActivityStatus, ActivityCompletion } from '../types';
-import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
 import Drawer from './Drawer';
 import { ArrowLeftIcon, PlusIcon } from './Icons';
@@ -271,8 +270,10 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
 
     </div>
 
-    {/* Modals y Drawers fuera del space-y-4 para que el overlay fixed cubra el 100% */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} title="Añadir Nuevas Actividades al Plan">
+    {/* Drawers y modales fuera del space-y-4 para que el overlay fixed cubra el 100% */}
+
+      {/* Drawer: añadir actividades */}
+      <Drawer isOpen={isModalOpen} onClose={closeModal} title="Añadir Nuevas Actividades">
         <div className="space-y-4">
           {newActivities.map((activity, index) => (
             <div key={index} className="flex items-center gap-2">
@@ -281,7 +282,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
                 placeholder={`Nombre de actividad ${index + 1}`}
                 value={activity.name}
                 onChange={e => handleActivityChange(index, e.target.value)}
-                className="flex-grow mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
+                className="flex-grow block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary text-sm"
               />
               {newActivities.length > 1 && (
                 <button onClick={() => handleRemoveActivityField(index)} className="text-red-500 hover:text-red-700 p-1 text-xl font-bold">
@@ -292,11 +293,11 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
           ))}
           <button onClick={handleAddActivityField} className="text-sm text-primary hover:underline">+ Añadir otra actividad</button>
         </div>
-        <div className="mt-6 flex justify-end gap-3">
-          <button onClick={closeModal} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
-          <button onClick={handleSubmitNewActivities} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark">Añadir Actividades</button>
+        <div className="mt-8 flex justify-end gap-3 border-t pt-4">
+          <button onClick={closeModal} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">Cancelar</button>
+          <button onClick={handleSubmitNewActivities} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-semibold">Añadir Actividades</button>
         </div>
-      </Modal>
+      </Drawer>
 
       <ConfirmationModal
         isOpen={activityToDelete !== null}
@@ -389,8 +390,8 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
         )}
       </Drawer>
 
-      {/* Modal: edit activity */}
-      <Modal
+      {/* Drawer: editar actividad */}
+      <Drawer
         isOpen={activityToEdit !== null}
         onClose={() => setActivityToEdit(null)}
         title="Editar Actividad"
@@ -402,14 +403,14 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddAct
             id="activityName"
             value={editedActivityName}
             onChange={(e) => setEditedActivityName(e.target.value)}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary text-sm"
           />
         </div>
-        <div className="mt-6 flex justify-end gap-3">
-          <button onClick={() => setActivityToEdit(null)} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
-          <button onClick={handleConfirmEditActivity} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark">Guardar Cambios</button>
+        <div className="mt-8 flex justify-end gap-3 border-t pt-4">
+          <button onClick={() => setActivityToEdit(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">Cancelar</button>
+          <button onClick={handleConfirmEditActivity} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-semibold">Guardar Cambios</button>
         </div>
-      </Modal>
+      </Drawer>
     </>
   );
 };

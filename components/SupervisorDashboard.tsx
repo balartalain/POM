@@ -2,8 +2,8 @@
 import React, { useState, useMemo } from 'react';
 import { User, Plan, Activity, ActivityStatus, Role } from '../types';
 import { INITIAL_PLANS, USERS } from '../data/mockData';
-import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
+import Drawer from './Drawer';
 import { PlusIcon } from './Icons';
 import PlanCard from './PlanCard';
 import PlanDetail from './PlanDetail';
@@ -271,58 +271,71 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
             )}
         </div>
         
-      <Modal isOpen={isModalOpen} onClose={closeModal} title={editingPlan ? "Editar Plan" : "Crear Nuevo Plan Mensual"}>
-        <div className="space-y-4">
+      <Drawer isOpen={isModalOpen} onClose={closeModal} title={editingPlan ? 'Editar Plan' : 'Crear Nuevo Plan'}>
+        <div className="space-y-5">
           <div>
             <label htmlFor="planName" className="block text-sm font-medium text-gray-700">Nombre del Plan</label>
-            <input type="text" id="planName" value={newPlanName} 
+            <input
+              type="text"
+              id="planName"
+              value={newPlanName}
               onChange={e => {
                 setNewPlanName(e.target.value);
-                if (formErrors.name) setFormErrors(prev => ({...prev, name: undefined}));
-              }} 
-              className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary ${formErrors.name ? 'border-red-500' : 'border-gray-300'}`}
+                if (formErrors.name) setFormErrors(prev => ({ ...prev, name: undefined }));
+              }}
+              className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-primary focus:border-primary ${formErrors.name ? 'border-red-500' : 'border-gray-300'}`}
             />
-            {formErrors.name && <p className="text-sm text-red-600 mt-1">{formErrors.name}</p>}
+            {formErrors.name && <p className="text-xs text-red-600 mt-1">{formErrors.name}</p>}
           </div>
+
           <div>
             <label htmlFor="planDeadline" className="block text-sm font-medium text-gray-700">Fecha Límite</label>
-            <input type="date" id="planDeadline" value={newPlanDeadline} 
+            <input
+              type="date"
+              id="planDeadline"
+              value={newPlanDeadline}
               onChange={e => {
-                setNewPlanDeadline(e.target.value)
-                if (formErrors.deadline) setFormErrors(prev => ({...prev, deadline: undefined}));
-              }} 
-              className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary ${formErrors.deadline ? 'border-red-500' : 'border-gray-300'}`}
+                setNewPlanDeadline(e.target.value);
+                if (formErrors.deadline) setFormErrors(prev => ({ ...prev, deadline: undefined }));
+              }}
+              className={`mt-1 block w-full border rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-primary focus:border-primary ${formErrors.deadline ? 'border-red-500' : 'border-gray-300'}`}
             />
-            {formErrors.deadline && <p className="text-sm text-red-600 mt-1">{formErrors.deadline}</p>}
+            {formErrors.deadline && <p className="text-xs text-red-600 mt-1">{formErrors.deadline}</p>}
           </div>
-          <h3 className="text-lg font-medium text-gray-900 border-t pt-4">
-            {editingPlan ? 'Añadir Nuevas Actividades' : 'Actividades'}
-          </h3>
-          {newPlanActivities.map((activity, index) => (
-            <div key={index} className="flex items-center gap-2 p-2 border rounded-md">
-              <input 
-                type="text" 
-                placeholder="Descripción de la actividad" 
-                value={activity.name}
-                onChange={e => handleActivityChange(index, e.target.value)}
-                className="flex-grow mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
-              />
-              {newPlanActivities.length > 1 && (
-                  <button onClick={() => handleRemoveActivityField(index)} className="text-red-500 hover:text-red-700 p-1 text-xl font-bold">
+
+          <div className="border-t pt-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+              {editingPlan ? 'Añadir Nuevas Actividades' : 'Actividades'}
+            </h3>
+            <div className="space-y-2">
+              {newPlanActivities.map((activity, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Descripción de la actividad"
+                    value={activity.name}
+                    onChange={e => handleActivityChange(index, e.target.value)}
+                    className="flex-grow block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-primary focus:border-primary"
+                  />
+                  {newPlanActivities.length > 1 && (
+                    <button onClick={() => handleRemoveActivityField(index)} className="text-red-500 hover:text-red-700 p-1 text-xl font-bold">
                       &times;
-                  </button>
-              )}
+                    </button>
+                  )}
+                </div>
+              ))}
             </div>
-          ))}
-          <button onClick={handleAddActivityField} className="text-sm text-primary hover:underline">+ Añadir otra actividad</button>
+            <button onClick={handleAddActivityField} className="text-sm text-primary hover:underline mt-2">+ Añadir otra actividad</button>
+          </div>
         </div>
-        <div className="mt-6 flex justify-end gap-3">
-          <button onClick={closeModal} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
-          <button onClick={handleSavePlan} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark">
+
+        <div className="mt-8 flex justify-end gap-3 border-t pt-4">
+          <button onClick={closeModal} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">Cancelar</button>
+          <button onClick={handleSavePlan} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-semibold">
             {editingPlan ? 'Guardar Cambios' : 'Crear Plan'}
           </button>
         </div>
-      </Modal>
+      </Drawer>
 
       <ConfirmationModal
         isOpen={planToDeleteId !== null}
