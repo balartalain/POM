@@ -1,7 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { User, Plan, Activity, ActivityStatus, Role } from '../types';
-import { USERS } from '../data/mockData';
+import { User, Plan } from '../types';
 import { planService } from '../services/PlanService';
 import ConfirmationModal from './ConfirmationModal';
 import Drawer from './Drawer';
@@ -14,7 +13,11 @@ interface SupervisorDashboardProps {
   supervisor: User;
 }
 
-const MONTHS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+const MONTHS: Record<number, string> = {
+  1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+  5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+  9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre',
+};
 const YEARS = Array.from({length: 5}, (_, i) => new Date().getFullYear() - 2 + i);
 
 const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor }) => {
@@ -27,15 +30,12 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [newPlanName, setNewPlanName] = useState('');
   const [newPlanDeadline, setNewPlanDeadline] = useState('');
-  const [newPlanActivities, setNewPlanActivities] = useState<Array<{name: string}>>([{ name: '' }]);
   const [formErrors, setFormErrors] = useState<{ name?: string; deadline?: string }>({});
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [planToDeleteId, setPlanToDeleteId] = useState<number | null>(null);
-  
-  const { addToast } = useToast();
 
-  const workers = useMemo(() => USERS.filter(u => u.role === Role.WORKER), []);
+  const { addToast } = useToast();
 
   useEffect(() => {
     let cancelled = false;
@@ -49,248 +49,170 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
   }, [selectedYear]);
 
   const filteredPlans = useMemo(() =>
-    [...plans].sort((a, b) => a.monthIndex - b.monthIndex),
+    [...plans].sort((a, b) => new Date(a.expiration_date).getTime() - new Date(b.expiration_date).getTime()),
   [plans]);
 
-  const plansByMonth = useMemo(() => {
-    // FIX: Explicitly cast the initial value of reduce to ensure `plansByMonth` is correctly typed.
-    return filteredPlans.reduce((acc: Record<string, Plan[]>, plan) => {
-      const monthName = MONTHS[plan.monthIndex];
-      if (!acc[monthName]) {
-        acc[monthName] = [];
-      }
-      acc[monthName].push(plan);
+  const plansByMonth = useMemo(() =>
+    filteredPlans.reduce((acc: Record<string, Plan[]>, plan) => {
+      const key = MONTHS[plan.month] ?? `Mes ${plan.month}`;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(plan);
       return acc;
-    }, {} as Record<string, Plan[]>);
-  }, [filteredPlans]);
-  
-  const handleSelectPlan = (plan: Plan) => {
-    setSelectedPlan(plan);
-  };
-  
-  const handleBackToDashboard = () => {
-    setSelectedPlan(null);
-  };
+    }, {}),
+  [filteredPlans]);
 
-  const handleAddActivitiesToPlan = (planId: number, activitiesToAdd: Array<{name: string}>) => {
-    const updatedPlans = plans.map(p => {
-        if (p.id === planId) {
-            const newActivities: Activity[] = activitiesToAdd.map((act, index) => ({
-                id: Date.now() + index,
-                name: act.name,
-                completions: workers.map(w => ({
-                    workerId: w.id,
-                    status: ActivityStatus.PENDING
-                })),
-            }));
-            const updatedPlan = { ...p, activities: [...p.activities, ...newActivities] };
-            setSelectedPlan(updatedPlan);
-            return updatedPlan;
-        }
-        return p;
-    });
-    setPlans(updatedPlans);
-    addToast('Actividades añadidas correctamente.', 'success');
-  };
+  const handleSelectPlan = (plan: Plan) => setSelectedPlan(plan);
+  const handleBackToDashboard = () => setSelectedPlan(null);
 
   const handleUpdatePlan = (updatedPlan: Plan) => {
-    const updatedPlans = plans.map(p => p.id === updatedPlan.id ? updatedPlan : p);
-    setPlans(updatedPlans);
-    if (selectedPlan && selectedPlan.id === updatedPlan.id) {
-        setSelectedPlan(updatedPlan);
-    }
+    setPlans(prev => prev.map(p => p.id === updatedPlan.id ? updatedPlan : p));
+    if (selectedPlan?.id === updatedPlan.id) setSelectedPlan(updatedPlan);
   };
-
-  const handleAddActivityField = () => {
-    setNewPlanActivities([...newPlanActivities, { name: '' }]);
-  };
-
-  const handleActivityChange = (index: number, value: string) => {
-    const updatedActivities = [...newPlanActivities];
-    updatedActivities[index].name = value;
-    setNewPlanActivities(updatedActivities);
-  };
-  
-  const handleRemoveActivityField = (index: number) => {
-      const updated = newPlanActivities.filter((_, i) => i !== index);
-      setNewPlanActivities(updated);
-  }
 
   const validateForm = () => {
     const errors: { name?: string; deadline?: string } = {};
-    if (!newPlanName.trim()) {
-      errors.name = "El nombre del plan es obligatorio.";
-    }
-    if (!newPlanDeadline) {
-      errors.deadline = "La fecha límite es obligatoria.";
-    }
+    if (!newPlanName.trim()) errors.name = "El nombre del plan es obligatorio.";
+    if (!newPlanDeadline) errors.deadline = "La fecha límite es obligatoria.";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleSavePlan = () => {
-    if (!validateForm()) {
-        return;
-    }
-
-    const validActivities = newPlanActivities.filter(act => act.name.trim() !== '');
-    const newActivitiesMapped = validActivities.map((act, index) => ({
-        id: Date.now() + index,
-        name: act.name.trim(),
-        completions: workers.map(w => ({
-            workerId: w.id,
-            status: ActivityStatus.PENDING,
-        })),
-    }));
-
-    const deadlineDate = new Date(`${newPlanDeadline}T23:59:59`);
-    const monthName = deadlineDate.toLocaleString('es-ES', { month: 'long', year: 'numeric' });
+  const handleSavePlan = async () => {
+    if (!validateForm()) return;
 
     if (editingPlan) {
-        setPlans(prevPlans => prevPlans.map(p =>
-            p.id === editingPlan.id
-                ? {
-                    ...p,
-                    name: newPlanName,
-                    deadline: deadlineDate.toISOString(),
-                    month: monthName,
-                    year: deadlineDate.getFullYear(),
-                    monthIndex: deadlineDate.getMonth(),
-                    activities: [...p.activities, ...newActivitiesMapped],
-                  }
-                : p
-        ));
+      try {
+        const updated = await planService.updatePlan(editingPlan.id, {
+          ...editingPlan,
+          title: newPlanName,
+          expiration_date: newPlanDeadline,
+        });
+        handleUpdatePlan(updated);
         addToast('Plan actualizado con éxito.', 'success');
+      } catch {
+        addToast('Error al actualizar el plan.', 'error');
+      }
     } else {
-        const newPlan: Plan = {
-          id: Date.now(),
-          name: newPlanName,
-          month: monthName,
-          year: deadlineDate.getFullYear(),
-          monthIndex: deadlineDate.getMonth(),
-          deadline: deadlineDate.toISOString(),
-          activities: newActivitiesMapped,
-        };
-        setPlans(prevPlans => [newPlan, ...prevPlans]);
+      try {
+        const created = await planService.createPlan({
+          title: newPlanName,
+          expiration_date: newPlanDeadline,
+        });
+        setPlans(prev => [created, ...prev]);
         addToast('Nuevo plan creado con éxito.', 'success');
+      } catch {
+        addToast('Error al crear el plan.', 'error');
+      }
     }
     closeModal();
   };
-  
+
   const handleOpenCreateModal = () => {
     setEditingPlan(null);
     setNewPlanName('');
     setNewPlanDeadline('');
-    setNewPlanActivities([{ name: '' }]);
     setFormErrors({});
     setIsModalOpen(true);
   };
 
-  const handleOpenEditModal = (planToEdit: Plan) => {
-    setEditingPlan(planToEdit);
-    setNewPlanName(planToEdit.name);
-    const deadlineDate = new Date(planToEdit.deadline);
-    const formattedDate = deadlineDate.toISOString().split('T')[0];
-    setNewPlanDeadline(formattedDate);
-    setNewPlanActivities([{ name: '' }]);
+  const handleOpenEditModal = (plan: Plan) => {
+    setEditingPlan(plan);
+    setNewPlanName(plan.title);
+    setNewPlanDeadline(plan.expiration_date);
     setFormErrors({});
     setIsModalOpen(true);
   };
 
-  const handleOpenDeleteModal = (planId: number) => {
-    setPlanToDeleteId(planId);
-  };
+  const handleOpenDeleteModal = (planId: number) => setPlanToDeleteId(planId);
+  const handleCloseDeleteModal = () => setPlanToDeleteId(null);
 
-  const handleCloseDeleteModal = () => {
-    setPlanToDeleteId(null);
-  };
-
-  const handleConfirmDelete = () => {
-    if (planToDeleteId) {
-      setPlans(prevPlans => prevPlans.filter(p => p.id !== planToDeleteId));
-      handleCloseDeleteModal();
+  const handleConfirmDelete = async () => {
+    if (!planToDeleteId) return;
+    try {
+      await planService.deletePlan(planToDeleteId);
+      setPlans(prev => prev.filter(p => p.id !== planToDeleteId));
       addToast('Plan eliminado correctamente.', 'success');
+    } catch {
+      addToast('Error al eliminar el plan.', 'error');
     }
+    handleCloseDeleteModal();
   };
-  
+
   const closeModal = () => {
-      setIsModalOpen(false);
-      setEditingPlan(null);
-      setNewPlanName('');
-      setNewPlanDeadline('');
-      setNewPlanActivities([{ name: '' }]);
-      setFormErrors({});
-  }
+    setIsModalOpen(false);
+    setEditingPlan(null);
+    setNewPlanName('');
+    setNewPlanDeadline('');
+    setFormErrors({});
+  };
 
   if (selectedPlan) {
     return (
-      <PlanDetail 
-        plan={selectedPlan} 
-        workers={workers}
+      <PlanDetail
+        plan={selectedPlan}
         onBack={handleBackToDashboard}
-        onAddActivities={handleAddActivitiesToPlan}
         onUpdatePlan={handleUpdatePlan}
       />
     );
   }
 
   return (
-    <div >
-        <div className="animate-fade-in space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                <h2 className="text-2xl font-bold text-dark-gray">Planes del Año {selectedYear}</h2>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <label htmlFor="year-select" className="text-sm font-medium text-dark-gray">Año:</label>
-                        <select id="year-select" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
-                            {YEARS.map(year => <option key={year} value={year}>{year}</option>)}
-                        </select>
-                    </div>
-                    <button
-                    onClick={handleOpenCreateModal}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
-                    >
-                    <PlusIcon className="w-5 h-5"/>
-                    Añadir Nuevo Plan
-                    </button>
-                </div>
+    <div>
+      <div className="animate-fade-in space-y-8">
+        <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+          <h2 className="text-2xl font-bold text-dark-gray">Planes del Año {selectedYear}</h2>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label htmlFor="year-select" className="text-sm font-medium text-dark-gray">Año:</label>
+              <select id="year-select" value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary">
+                {YEARS.map(year => <option key={year} value={year}>{year}</option>)}
+              </select>
             </div>
-
-            {loading ? (
-                <div className="text-center text-dark-gray p-8 bg-white rounded-lg shadow">
-                  <p>Cargando planes...</p>
-                </div>
-            ) : error ? (
-                <div className="text-center text-red-600 p-8 bg-white rounded-lg shadow">
-                  <p>{error}</p>
-                </div>
-            ) : filteredPlans.length > 0 ? (
-                <div className="space-y-8">
-                    {Object.entries(plansByMonth).map(([month, monthPlans]) => (
-                        <div key={month}>
-                            <h3 className="text-xl font-semibold text-dark-gray mb-3 pb-2 border-b">{month}</h3>
-                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                                {monthPlans.map(plan => (
-                                    <PlanCard 
-                                      key={plan.id} 
-                                      plan={plan} 
-                                      userRole={supervisor.role}
-                                      onClick={() => handleSelectPlan(plan)}
-                                      onEdit={() => handleOpenEditModal(plan)}
-                                      onDelete={() => handleOpenDeleteModal(plan.id)}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="text-center text-dark-gray p-8 bg-white rounded-lg shadow">
-                  <p>No se encontraron planes para el año {selectedYear}.</p>
-                </div>
-            )}
+            <button
+              onClick={handleOpenCreateModal}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+            >
+              <PlusIcon className="w-5 h-5" />
+              Añadir Nuevo Plan
+            </button>
+          </div>
         </div>
-        
+
+        {loading ? (
+          <div className="text-center text-dark-gray p-8 bg-white rounded-lg shadow">
+            <p>Cargando planes...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center text-red-600 p-8 bg-white rounded-lg shadow">
+            <p>{error}</p>
+          </div>
+        ) : filteredPlans.length > 0 ? (
+          <div className="space-y-8">
+            {Object.entries(plansByMonth).map(([month, monthPlans]) => (
+              <div key={month}>
+                <h3 className="text-xl font-semibold text-dark-gray mb-3 pb-2 border-b capitalize">{month}</h3>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {monthPlans.map(plan => (
+                    <PlanCard
+                      key={plan.id}
+                      plan={plan}
+                      userRole={supervisor.role}
+                      onClick={() => handleSelectPlan(plan)}
+                      onEdit={() => handleOpenEditModal(plan)}
+                      onDelete={() => handleOpenDeleteModal(plan.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center text-dark-gray p-8 bg-white rounded-lg shadow">
+            <p>No se encontraron planes para el año {selectedYear}.</p>
+          </div>
+        )}
+      </div>
+
       <Drawer isOpen={isModalOpen} onClose={closeModal} title={editingPlan ? 'Editar Plan' : 'Crear Nuevo Plan'}>
         <div className="space-y-5">
           <div>
@@ -322,31 +244,6 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
             />
             {formErrors.deadline && <p className="text-xs text-red-600 mt-1">{formErrors.deadline}</p>}
           </div>
-
-          <div className="border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">
-              {editingPlan ? 'Añadir Nuevas Actividades' : 'Actividades'}
-            </h3>
-            <div className="space-y-2">
-              {newPlanActivities.map((activity, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder="Descripción de la actividad"
-                    value={activity.name}
-                    onChange={e => handleActivityChange(index, e.target.value)}
-                    className="flex-grow block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-primary focus:border-primary"
-                  />
-                  {newPlanActivities.length > 1 && (
-                    <button onClick={() => handleRemoveActivityField(index)} className="text-red-500 hover:text-red-700 p-1 text-xl font-bold">
-                      &times;
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            <button onClick={handleAddActivityField} className="text-sm text-primary hover:underline mt-2">+ Añadir otra actividad</button>
-          </div>
         </div>
 
         <div className="mt-8 flex justify-end gap-3 border-t pt-4">
@@ -365,8 +262,8 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         confirmText="Eliminar"
       >
         <p className="text-base">
-          ¿Estás seguro de que quieres eliminar el plan 
-          <span className="font-bold"> "{plans.find(p => p.id === planToDeleteId)?.name}"</span>?
+          ¿Estás seguro de que quieres eliminar el plan
+          <span className="font-bold"> "{plans.find(p => p.id === planToDeleteId)?.title}"</span>?
         </p>
         <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>
       </ConfirmationModal>

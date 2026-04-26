@@ -31,10 +31,10 @@ export interface Activity {
 
 export interface Plan {
   id: number;
-  name: string;
-  month: string;
-  year: number;
-  monthIndex: number;
-  deadline: string; // ISO 8601 format date string
-  activities: Activity[];
+  title: string;
+  supervisor_id: number;
+  expiration_date: string;
+  month: number;
+  total_activities: number;
+  total_completed: number;
 }

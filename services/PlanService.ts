@@ -50,17 +50,17 @@ class PlanService {
   }
 
   /** POST /api/v1/planes/ */
-  async createPlan(plan: Omit<Plan, 'id'>): Promise<Plan> {
+  async createPlan(plan: Pick<Plan, 'title' | 'expiration_date'>): Promise<Plan> {
     return this.request<Plan>('/api/v1/planes/', {
       method: 'POST',
       body: JSON.stringify(plan),
     });
   }
 
-  /** PUT /api/v1/planes/{id}/ */
+  /** PATCH /api/v1/planes/{id}/ */
   async updatePlan(id: number, plan: Partial<Plan>): Promise<Plan> {
     return this.request<Plan>(`/api/v1/planes/${id}/`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(plan),
     });
   }

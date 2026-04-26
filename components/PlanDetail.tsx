@@ -12,9 +12,9 @@ import { fakeActivities, FakeActivity } from '../data/fakeActivities';
 
 interface PlanDetailProps {
   plan: Plan;
-  workers: User[];
+  workers?: User[];
   onBack: () => void;
-  onAddActivities: (planId: number, newActivities: Array<{name: string}>) => void;
+  onAddActivities?: (planId: number, newActivities: Array<{name: string}>) => void;
   onUpdatePlan: (updatedPlan: Plan) => void;
 }
 
