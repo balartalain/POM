@@ -9,6 +9,7 @@ import Drawer from './Drawer';
 import { ArrowLeftIcon, PlusIcon } from './Icons';
 import { useToast } from '../hooks/useToast';
 import { activityService } from '../services/ActivityService';
+import Spinner from './shared/Spinner';
 
 interface PlanDetailProps {
   plan: Plan;
@@ -75,6 +76,9 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
   const [activityToEdit, setActivityToEdit] = useState<ActivityRow | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const { addToast } = useToast();
 
@@ -132,6 +136,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
       addToast('El título y la descripción son obligatorios.', 'error');
       return;
     }
+    setIsAdding(true);
     try {
       const created = await activityService.createActivity({
         plan_id: plan.id,
@@ -143,6 +148,8 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
       closeAddDrawer();
     } catch {
       addToast('Error al crear la actividad.', 'error');
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -151,6 +158,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
       addToast('El título y la descripción son obligatorios.', 'error');
       return;
     }
+    setIsSavingEdit(true);
     try {
       const updated = await activityService.updateActivity(activityToEdit.id, {
         plan_id: activityToEdit.plan_id,
@@ -162,19 +170,24 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
       setActivityToEdit(null);
     } catch {
       addToast('Error al actualizar la actividad.', 'error');
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
   const handleConfirmDeleteActivity = async () => {
     if (!activityToDelete) return;
+    setIsDeleting(true);
     try {
       await activityService.deleteActivity(activityToDelete.id);
       setActivities(prev => prev.filter(a => a.id !== activityToDelete.id));
       addToast('Actividad eliminada correctamente.', 'success');
+      setActivityToDelete(null);
     } catch {
       addToast('Error al eliminar la actividad.', 'error');
+    } finally {
+      setIsDeleting(false);
     }
-    setActivityToDelete(null);
   };
 
   const closeAddDrawer = () => {
@@ -252,7 +265,14 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
         </div>
         <div className="mt-8 flex justify-end gap-3 border-t pt-4">
           <button onClick={closeAddDrawer} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">Cancelar</button>
-          <button onClick={handleAddActivity} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-semibold">Añadir</button>
+          <button
+            onClick={handleAddActivity}
+            disabled={isAdding}
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isAdding && <Spinner />}
+            {isAdding ? 'Añadiendo...' : 'Añadir'}
+          </button>
         </div>
       </Drawer>
 
@@ -280,7 +300,14 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
         </div>
         <div className="mt-8 flex justify-end gap-3 border-t pt-4">
           <button onClick={() => setActivityToEdit(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">Cancelar</button>
-          <button onClick={handleConfirmEditActivity} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-semibold">Guardar Cambios</button>
+          <button
+            onClick={handleConfirmEditActivity}
+            disabled={isSavingEdit}
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isSavingEdit && <Spinner />}
+            {isSavingEdit ? 'Guardando...' : 'Guardar Cambios'}
+          </button>
         </div>
       </Drawer>
 
@@ -301,6 +328,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
         onConfirm={handleConfirmDeleteActivity}
         title="Confirmar Eliminación de Actividad"
         confirmText="Eliminar"
+        isLoading={isDeleting}
       >
         <p>¿Estás seguro de que quieres eliminar <strong>"{activityToDelete?.titulo}"</strong>?</p>
         <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>

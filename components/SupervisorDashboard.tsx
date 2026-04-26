@@ -5,6 +5,7 @@ import { planService } from '../services/PlanService';
 import ConfirmationModal from './ConfirmationModal';
 import Drawer from './Drawer';
 import { PlusIcon } from './Icons';
+import Spinner from './shared/Spinner';
 import PlanCard from './PlanCard';
 import PlanDetail from './PlanDetail';
 import { useToast } from '../hooks/useToast';
@@ -34,6 +35,8 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
 
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [planToDeleteId, setPlanToDeleteId] = useState<number | null>(null);
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
+  const [isDeletingPlan, setIsDeletingPlan] = useState(false);
 
   const { addToast } = useToast();
 
@@ -80,8 +83,9 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
   const handleSavePlan = async () => {
     if (!validateForm()) return;
 
-    if (editingPlan) {
-      try {
+    setIsSavingPlan(true);
+    try {
+      if (editingPlan) {
         const updated = await planService.updatePlan(editingPlan.id, {
           ...editingPlan,
           title: newPlanName,
@@ -89,11 +93,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         });
         handleUpdatePlan(updated);
         addToast('Plan actualizado con éxito.', 'success');
-      } catch {
-        addToast('Error al actualizar el plan.', 'error');
-      }
-    } else {
-      try {
+      } else {
         const created = await planService.createPlan({
           title: newPlanName,
           expiration_date: newPlanDeadline,
@@ -101,11 +101,13 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         });
         setPlans(prev => [created, ...prev]);
         addToast('Nuevo plan creado con éxito.', 'success');
-      } catch {
-        addToast('Error al crear el plan.', 'error');
       }
+      closeModal();
+    } catch {
+      addToast(editingPlan ? 'Error al actualizar el plan.' : 'Error al crear el plan.', 'error');
+    } finally {
+      setIsSavingPlan(false);
     }
-    closeModal();
   };
 
   const handleOpenCreateModal = () => {
@@ -129,14 +131,17 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
 
   const handleConfirmDelete = async () => {
     if (!planToDeleteId) return;
+    setIsDeletingPlan(true);
     try {
       await planService.deletePlan(planToDeleteId);
       setPlans(prev => prev.filter(p => p.id !== planToDeleteId));
       addToast('Plan eliminado correctamente.', 'success');
+      handleCloseDeleteModal();
     } catch {
       addToast('Error al eliminar el plan.', 'error');
+    } finally {
+      setIsDeletingPlan(false);
     }
-    handleCloseDeleteModal();
   };
 
   const closeModal = () => {
@@ -248,9 +253,17 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         </div>
 
         <div className="mt-8 flex justify-end gap-3 border-t pt-4">
-          <button onClick={closeModal} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">Cancelar</button>
-          <button onClick={handleSavePlan} className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-semibold">
-            {editingPlan ? 'Guardar Cambios' : 'Crear Plan'}
+          <button onClick={closeModal} disabled={isSavingPlan} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm disabled:opacity-70 disabled:cursor-not-allowed">Cancelar</button>
+          <button
+            onClick={handleSavePlan}
+            disabled={isSavingPlan}
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isSavingPlan && <Spinner />}
+            {isSavingPlan
+              ? (editingPlan ? 'Guardando...' : 'Creando...')
+              : (editingPlan ? 'Guardar Cambios' : 'Crear Plan')
+            }
           </button>
         </div>
       </Drawer>
@@ -261,6 +274,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         onConfirm={handleConfirmDelete}
         title="Confirmar Eliminación"
         confirmText="Eliminar"
+        isLoading={isDeletingPlan}
       >
         <p className="text-base">
           ¿Estás seguro de que quieres eliminar el plan
