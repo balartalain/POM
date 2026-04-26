@@ -1,7 +1,8 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { User, Plan, Activity, ActivityStatus, Role } from '../types';
-import { INITIAL_PLANS, USERS } from '../data/mockData';
+import { USERS } from '../data/mockData';
+import { planService } from '../services/PlanService';
 import ConfirmationModal from './ConfirmationModal';
 import Drawer from './Drawer';
 import { PlusIcon } from './Icons';
@@ -17,9 +18,11 @@ const MONTHS = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", 
 const YEARS = Array.from({length: 5}, (_, i) => new Date().getFullYear() - 2 + i);
 
 const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor }) => {
-  const [plans, setPlans] = useState<Plan[]>(INITIAL_PLANS);
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [newPlanName, setNewPlanName] = useState('');
@@ -34,11 +37,20 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
 
   const workers = useMemo(() => USERS.filter(u => u.role === Role.WORKER), []);
 
-  const filteredPlans = useMemo(() => {
-    return plans
-      .filter(plan => plan.year === selectedYear)
-      .sort((a, b) => a.monthIndex - b.monthIndex);
-  }, [plans, selectedYear]);
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    planService.getPlans(selectedYear)
+      .then(data => { if (!cancelled) setPlans(data); })
+      .catch(err => { if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar los planes.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedYear]);
+
+  const filteredPlans = useMemo(() =>
+    [...plans].sort((a, b) => a.monthIndex - b.monthIndex),
+  [plans]);
 
   const plansByMonth = useMemo(() => {
     // FIX: Explicitly cast the initial value of reduce to ensure `plansByMonth` is correctly typed.
@@ -244,7 +256,15 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
                 </div>
             </div>
 
-            {filteredPlans.length > 0 ? (
+            {loading ? (
+                <div className="text-center text-dark-gray p-8 bg-white rounded-lg shadow">
+                  <p>Cargando planes...</p>
+                </div>
+            ) : error ? (
+                <div className="text-center text-red-600 p-8 bg-white rounded-lg shadow">
+                  <p>{error}</p>
+                </div>
+            ) : filteredPlans.length > 0 ? (
                 <div className="space-y-8">
                     {Object.entries(plansByMonth).map(([month, monthPlans]) => (
                         <div key={month}>
