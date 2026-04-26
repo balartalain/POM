@@ -1,9 +1,9 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { ReactTabulator, ColumnDefinition } from 'react-tabulator';
 import 'react-tabulator/lib/styles.css';
 import 'react-tabulator/lib/css/tabulator_bootstrap3.min.css';
-import { Plan, User } from '../types';
+import { Plan, User, ActivityStatus, ActivityCompletion } from '../types';
 import Modal from './Modal';
 import ConfirmationModal from './ConfirmationModal';
 import Drawer from './Drawer';
@@ -54,7 +54,8 @@ const actionsFormatter = () => `
   </div>
 `;
 
-const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack, onAddActivities }) => {
+const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers, onBack, onAddActivities }) => {
+  const [activeSection, setActiveSection] = useState<'activities' | 'workers'>('activities');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newActivities, setNewActivities] = useState<Array<{name: string}>>([{ name: '' }]);
 
@@ -62,8 +63,44 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack, onAddActivities }
   const [activityToEdit, setActivityToEdit] = useState<FakeActivity | null>(null);
   const [editedActivityName, setEditedActivityName] = useState('');
   const [activityToView, setActivityToView] = useState<FakeActivity | null>(null);
+  const [workerToView, setWorkerToView] = useState<User | null>(null);
 
   const { addToast } = useToast();
+
+  const workersRef = useRef(workers);
+  workersRef.current = workers;
+
+  const workerProgress = useMemo(() =>
+    workers.map(worker => {
+      const completions = plan.activities
+        .map(a => a.completions.find(c => c.workerId === worker.id))
+        .filter((c): c is ActivityCompletion => c !== undefined);
+      const total = completions.length;
+      const completed = completions.filter(c => c.status === ActivityStatus.COMPLETED).length;
+      return { worker, completed, total, progress: total > 0 ? Math.round((completed / total) * 100) : 0 };
+    }),
+  [plan, workers]);
+
+  const workerTableData = useMemo(() =>
+    workerProgress.map(({ worker, completed, total, progress }) => ({
+      workerId: worker.id,
+      nombre: worker.name,
+      plan: plan.name,
+      tareas: `${completed}/${total}`,
+      progreso: progress,
+    })),
+  [workerProgress, plan.name]);
+
+  const workerActivities = useMemo(() => {
+    if (!workerToView) return [];
+    return plan.activities.flatMap(activity => {
+      const completion = activity.completions.find(
+        c => c.workerId === workerToView.id && c.status === ActivityStatus.COMPLETED
+      );
+      if (!completion) return [];
+      return [{ id: activity.id, nombre: activity.name, completedAt: completion.completedAt, evidenceFile: completion.evidenceFile }];
+    });
+  }, [workerToView, plan]);
 
   const handleAddActivityField = () => setNewActivities([...newActivities, { name: '' }]);
 
@@ -121,6 +158,22 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack, onAddActivities }
     if (action === 'view') setActivityToView(row);
   };
 
+  const workerColumns: ColumnDefinition[] = useMemo(() => [
+    { title: 'Nombre',   field: 'nombre',  widthGrow: 2, headerSort: true },
+    { title: 'Plan',     field: 'plan',    widthGrow: 2, headerSort: true },
+    { title: 'Tareas',   field: 'tareas',  width: 90, hozAlign: 'center' as const, headerSort: false },
+    {
+      title: 'Progreso', field: 'progreso', widthGrow: 2, headerSort: true, formatter: progressFormatter,
+      cellClick: (_e: any, cell: any) => {
+        const target = _e.target as HTMLElement;
+        if (target.closest('[data-action]')?.getAttribute('data-action') !== 'view') return;
+        const { workerId } = cell.getData();
+        const worker = workersRef.current.find((w: User) => w.id === workerId);
+        if (worker) setWorkerToView(worker);
+      },
+    },
+  ], []);
+
   const columns: ColumnDefinition[] = useMemo(() => [
     { title: 'Título',       field: 'titulo',    widthGrow: 2, headerSort: true },
     { title: 'Nombre',       field: 'nombre',    widthGrow: 2, headerSort: true },
@@ -137,8 +190,14 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack, onAddActivities }
     },
   ], []);
 
+  const tabClass = (section: 'activities' | 'workers') =>
+    activeSection === section
+      ? 'border-primary text-primary whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm'
+      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm';
+
   return (
-    <div>
+    <div className="space-y-4">
+      {/* Header */}
       <div>
         <button onClick={onBack} className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline mb-4">
           <ArrowLeftIcon className="w-5 h-5" />
@@ -152,27 +211,64 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack, onAddActivities }
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <div className="p-4 bg-gray-50 border-b flex justify-between items-center flex-wrap gap-3">
-          <h2 className="text-2xl font-bold text-dark-gray">Actividades</h2>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
-          >
-            <PlusIcon className="w-5 h-5" />
-            Añadir Actividades
+      {/* Tab nav */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-6">
+          <button className={tabClass('activities')} onClick={() => setActiveSection('activities')}>
+            Actividades
           </button>
-        </div>
-        <div className="p-4">
-          <ReactTabulator
-            data={fakeActivities}
-            columns={columns}
-            layout="fitColumns"
-            options={{ movableColumns: true }}
-          />
-        </div>
+          <button className={tabClass('workers')} onClick={() => setActiveSection('workers')}>
+            Empleados
+          </button>
+        </nav>
       </div>
 
+      {/* Activities table */}
+      {activeSection === 'activities' && (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-4 bg-gray-50 border-b flex justify-between items-center flex-wrap gap-3">
+            <h2 className="text-2xl font-bold text-dark-gray">Actividades</h2>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+            >
+              <PlusIcon className="w-5 h-5" />
+              Añadir Actividades
+            </button>
+          </div>
+          <div className="p-4">
+            <ReactTabulator
+              data={fakeActivities}
+              columns={columns}
+              layout="fitColumns"
+              options={{ movableColumns: true }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Workers table */}
+      {activeSection === 'workers' && (
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+          <div className="p-4 bg-gray-50 border-b">
+            <h2 className="text-2xl font-bold text-dark-gray">Empleados</h2>
+          </div>
+          <div className="p-4">
+            {workerTableData.length ? (
+              <ReactTabulator
+                data={workerTableData}
+                columns={workerColumns}
+                layout="fitColumns"
+                options={{ movableColumns: false }}
+              />
+            ) : (
+              <p className="text-center text-gray-400 py-8 text-sm">No hay empleados asignados a este plan.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
       <Modal isOpen={isModalOpen} onClose={closeModal} title="Añadir Nuevas Actividades al Plan">
         <div className="space-y-4">
           {newActivities.map((activity, index) => (
@@ -210,6 +306,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack, onAddActivities }
         <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>
       </ConfirmationModal>
 
+      {/* Drawer: activity completions */}
       <Drawer
         isOpen={activityToView !== null}
         onClose={() => setActivityToView(null)}
@@ -246,6 +343,50 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack, onAddActivities }
         )}
       </Drawer>
 
+      {/* Drawer: worker completed activities */}
+      <Drawer
+        isOpen={workerToView !== null}
+        onClose={() => setWorkerToView(null)}
+        title={workerToView?.name ?? ''}
+      >
+        {workerToView && (
+          <>
+            <p className="text-xs text-gray-400 mb-4 capitalize">{plan.name} · {plan.month}</p>
+            {workerActivities.length ? (
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 border-b">Actividad</th>
+                    <th className="px-3 py-2 border-b">Fecha completada</th>
+                    <th className="px-3 py-2 border-b">Evidencia</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {workerActivities.map(act => (
+                    <tr key={act.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2.5 text-gray-800">{act.nombre}</td>
+                      <td className="px-3 py-2.5 text-gray-500 whitespace-nowrap">
+                        {act.completedAt
+                          ? new Date(act.completedAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+                          : <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {act.evidenceFile
+                          ? <a href="#" className="text-xs text-primary hover:underline">{act.evidenceFile}</a>
+                          : <span className="text-gray-300">—</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-center text-gray-400 py-8 text-sm">Este empleado no ha completado ninguna actividad.</p>
+            )}
+          </>
+        )}
+      </Drawer>
+
+      {/* Modal: edit activity */}
       <Modal
         isOpen={activityToEdit !== null}
         onClose={() => setActivityToEdit(null)}

@@ -35,7 +35,7 @@ export const INITIAL_PLANS: Plan[] = [
         id: 101, 
         name: 'Recopilar datos de ventas del T1', 
         completions: [
-          { workerId: 2, status: ActivityStatus.COMPLETED, evidenceFile: 'datos_ventas_t1.pdf' },
+          { workerId: 2, status: ActivityStatus.COMPLETED, completedAt: '2025-01-18', evidenceFile: 'datos_ventas_t1.pdf' },
           { workerId: 3, status: ActivityStatus.PENDING }
         ]
       },
@@ -60,7 +60,7 @@ export const INITIAL_PLANS: Plan[] = [
         name: 'Revisar estados financieros', 
         completions: [
           { workerId: 2, status: ActivityStatus.PENDING },
-          { workerId: 3, status: ActivityStatus.COMPLETED, evidenceFile: 'revision_financiera.pdf' }
+          { workerId: 3, status: ActivityStatus.COMPLETED, completedAt: '2025-01-22', evidenceFile: 'revision_financiera.pdf' }
         ]
       },
     ],
@@ -77,7 +77,7 @@ export const INITIAL_PLANS: Plan[] = [
         id: 201, 
         name: 'Diseñar materiales promocionales', 
         completions: [
-          { workerId: 2, status: ActivityStatus.COMPLETED, evidenceFile: 'diseños_promocionales.pdf' },
+          { workerId: 2, status: ActivityStatus.COMPLETED, completedAt: '2025-02-05', evidenceFile: 'diseños_promocionales.pdf' },
           { workerId: 3, status: ActivityStatus.PENDING }
         ]
       },

@@ -19,6 +19,7 @@ export enum ActivityStatus {
 export interface ActivityCompletion {
   workerId: number;
   status: ActivityStatus;
+  completedAt?: string;
   evidenceFile?: string;
 }
 
