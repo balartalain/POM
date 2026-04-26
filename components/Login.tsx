@@ -1,19 +1,25 @@
 
 import React, { useState } from 'react';
 import { LockClosedIcon, UserIcon } from './Icons';
+import Spinner from './shared/Spinner';
 
 interface LoginProps {
-  onLogin: (username: string) => boolean;
+  onLogin: (username: string) => Promise<boolean>;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!onLogin(username)) {
-      setError('Usuario inválido. Intenta con "supervisor" o "worker1".');
+    setIsLoading(true);
+    setError('');
+    const success = await onLogin(username);
+    if (!success) {
+      setError('Usuario no encontrado. Verifica tu nombre de usuario.');
+      setIsLoading(false);
     }
   };
 
@@ -36,7 +42,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     autoComplete="username"
                     required
                     className="appearance-none rounded-md relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
-                    placeholder="Usuario (ej: supervisor, worker1, worker2)"
+                    placeholder="Usuario (ej: supervisor, employee1, employee2)"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                 />
@@ -47,12 +53,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <div>
                 <button
                     type="submit"
-                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors"
+                    disabled={isLoading}
+                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
                 >
-                    <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                        <LockClosedIcon className="h-5 w-5 text-indigo-300 group-hover:text-indigo-200" />
-                    </span>
-                    Iniciar sesión
+                    {isLoading ? (
+                      <Spinner className="h-5 w-5 text-white" />
+                    ) : (
+                      <>
+                        <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                          <LockClosedIcon className="h-5 w-5 text-indigo-300 group-hover:text-indigo-200" />
+                        </span>
+                        Iniciar sesión
+                      </>
+                    )}
                 </button>
             </div>
         </form>

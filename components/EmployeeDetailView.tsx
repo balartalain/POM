@@ -4,13 +4,13 @@ import { User, Plan, ActivityCompletion, ActivityStatus } from '../types';
 import { ArrowLeftIcon, CheckCircleIcon, ClockIcon, DocumentCheckIcon } from './Icons';
 import ProgressBar from './ProgressBar';
 
-interface WorkerDetailViewProps {
-  worker: User;
+interface EmployeeDetailViewProps {
+  employee: User;
   plans: Plan[];
   onBack: () => void;
 }
 
-const WorkerDetailView: React.FC<WorkerDetailViewProps> = ({ worker, plans, onBack }) => {
+const EmployeeDetailView: React.FC<EmployeeDetailViewProps> = ({ employee, plans, onBack }) => {
     const [expandedPlanIds, setExpandedPlanIds] = useState<Set<number>>(() => {
         // Automatically expand the first plan by default
         const initialId = plans.length > 0 ? new Set([plans[0].id]) : new Set<number>();
@@ -74,7 +74,7 @@ const WorkerDetailView: React.FC<WorkerDetailViewProps> = ({ worker, plans, onBa
                     Volver al Panel
                 </button>
                 <div className="bg-white p-6 rounded-lg shadow-md">
-                    <h1 className="text-2xl sm:text-3xl font-bold text-primary">Progreso Detallado de {worker.name}</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-primary">Progreso Detallado de {employee.name}</h1>
                     <p className="text-dark-gray mt-1">Revisión de todas las actividades asignadas en todos los planes.</p>
                 </div>
             </div>
@@ -83,13 +83,13 @@ const WorkerDetailView: React.FC<WorkerDetailViewProps> = ({ worker, plans, onBa
                 {plans.map(plan => {
                     const isExpanded = expandedPlanIds.has(plan.id);
                     
-                    const workerCompletionsInPlan = plan.activities
-                        .map(activity => activity.completions.find(c => c.workerId === worker.id))
+                    const employeeCompletionsInPlan = plan.activities
+                        .map(activity => activity.completions.find(c => c.employeeId === employee.id))
                         .filter((c): c is ActivityCompletion => c !== undefined);
 
-                    const totalActivitiesForWorker = workerCompletionsInPlan.length;
-                    const completedActivitiesForWorker = workerCompletionsInPlan.filter(c => c.status === ActivityStatus.COMPLETED).length;
-                    const progress = totalActivitiesForWorker > 0 ? (completedActivitiesForWorker / totalActivitiesForWorker) * 100 : 0;
+                    const totalActivitiesForEmployee = employeeCompletionsInPlan.length;
+                    const completedActivitiesForEmployee = employeeCompletionsInPlan.filter(c => c.status === ActivityStatus.COMPLETED).length;
+                    const progress = totalActivitiesForEmployee > 0 ? (completedActivitiesForEmployee / totalActivitiesForEmployee) * 100 : 0;
 
                     return (
                         <div key={plan.id} className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -105,11 +105,11 @@ const WorkerDetailView: React.FC<WorkerDetailViewProps> = ({ worker, plans, onBa
                                 </div>
                                 
                                 <div className="flex items-center gap-3 sm:gap-6">
-                                    {totalActivitiesForWorker > 0 && (
+                                    {totalActivitiesForEmployee > 0 && (
                                         <div className="w-32 sm:w-48 hidden sm:block">
                                             <div className="flex justify-between text-xs text-dark-gray mb-1">
                                                 <span>Progreso</span>
-                                                <span>{`${completedActivitiesForWorker}/${totalActivitiesForWorker}`}</span>
+                                                <span>{`${completedActivitiesForEmployee}/${totalActivitiesForEmployee}`}</span>
                                             </div>
                                             <ProgressBar value={progress} />
                                         </div>
@@ -124,7 +124,7 @@ const WorkerDetailView: React.FC<WorkerDetailViewProps> = ({ worker, plans, onBa
                                 <div id={`plan-activities-${plan.id}`} className="p-4 sm:p-6 border-t border-gray-200">
                                     <ul className="space-y-3">
                                         {plan.activities.map(activity => {
-                                            const completion = activity.completions.find(c => c.workerId === worker.id);
+                                            const completion = activity.completions.find(c => c.employeeId === employee.id);
                                             return (
                                                 <li key={activity.id} className="flex items-center justify-between p-3 bg-light-gray rounded-lg border">
                                                     <span className="font-medium text-dark-gray flex-1 pr-4">{activity.name}</span>
@@ -144,4 +144,4 @@ const WorkerDetailView: React.FC<WorkerDetailViewProps> = ({ worker, plans, onBa
     );
 };
 
-export default WorkerDetailView;
+export default EmployeeDetailView;

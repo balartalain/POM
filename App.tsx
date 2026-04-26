@@ -2,10 +2,10 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import Pusher from 'pusher-js';
 import { User, Role } from './types';
-import { USERS } from './data/mockData';
+import { userService } from './services/UserService';
 import Login from './components/Login';
 import SupervisorDashboard from './components/SupervisorDashboard';
-import WorkerDashboard from './components/WorkerDashboard';
+import EmployeeDashboard from './components/EmployeeDashboard';
 import Header from './components/Header';
 import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ToastContainer';
@@ -32,13 +32,18 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const handleLogin = useCallback((username: string): boolean => {
-    const user = USERS.find(u => u.username.toLowerCase() === username.toLowerCase());
-    if (user) {
-      setCurrentUser(user);
-      return true;
+  const handleLogin = useCallback(async (username: string): Promise<boolean> => {
+    try {
+      const users = await userService.getUsers();
+      const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+      if (user) {
+        setCurrentUser(user);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
     }
-    return false;
   }, []);
 
   const handleLogout = useCallback(() => {
@@ -57,7 +62,7 @@ const App: React.FC = () => {
           {currentUser.role === Role.SUPERVISOR ? (
             <SupervisorDashboard supervisor={currentUser} />
           ) : (
-            <WorkerDashboard worker={currentUser} />
+            <EmployeeDashboard employee={currentUser} />
           )}
         </main>
       </div>

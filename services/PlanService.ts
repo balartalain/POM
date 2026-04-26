@@ -6,7 +6,7 @@ export interface ApiActivity {
   id: number;
   name: string;
   completions: Array<{
-    workerId: number;
+    employeeId: number;
     status: string;
     completedAt?: string;
     evidenceFile?: string;

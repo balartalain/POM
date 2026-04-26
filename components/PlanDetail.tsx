@@ -14,7 +14,7 @@ import Spinner from './shared/Spinner';
 
 interface PlanDetailProps {
   plan: Plan;
-  workers?: User[];
+  employees?: User[];
   onBack: () => void;
   onUpdatePlan: (updatedPlan: Plan) => void;
 }
@@ -65,8 +65,8 @@ interface ActivityRow {
   progreso: number;
 }
 
-const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers = [], onBack }) => {
-  const [activeSection, setActiveSection] = useState<'activities' | 'workers'>('activities');
+const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack }) => {
+  const [activeSection, setActiveSection] = useState<'activities' | 'employees'>('activities');
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -82,12 +82,12 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers = [], onBack }) =
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [workerToView, setWorkerToView] = useState<User | null>(null);
+  const [employeeToView, setEmployeeToView] = useState<User | null>(null);
   const [activityCompletions, setActivityCompletions] = useState<UserWithCompletion[]>([]);
   const [loadingCompletions, setLoadingCompletions] = useState(false);
 
-  const workersRef = useRef(workers);
-  workersRef.current = workers;
+  const employeesRef = useRef(employees);
+  employeesRef.current = employees;
 
   const { addToast } = useToast();
 
@@ -152,16 +152,16 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers = [], onBack }) =
     },
   ], []);
 
-  const workerTableData = useMemo(() =>
-    workers.map(worker => ({
-      workerId: worker.id,
-      nombre: worker.name,
+  const employeeTableData = useMemo(() =>
+    employees.map(employee => ({
+      employeeId: employee.id,
+      nombre: employee.name,
       tareas: `0/${activities.length}`,
       progreso: 0,
     })),
-  [workers, activities]);
+  [employees, activities]);
 
-  const workerColumns: ColumnDefinition[] = useMemo(() => [
+  const employeeColumns: ColumnDefinition[] = useMemo(() => [
     { title: 'Nombre',   field: 'nombre',  widthGrow: 2, headerSort: true },
     { title: 'Tareas',   field: 'tareas',  width: 90, hozAlign: 'center' as const, headerSort: false },
     {
@@ -169,14 +169,14 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers = [], onBack }) =
       cellClick: (_e: any, cell: any) => {
         const target = _e.target as HTMLElement;
         if (target.dataset.action !== 'view') return;
-        const { workerId } = cell.getData();
-        const worker = workersRef.current.find(w => w.id === workerId);
-        if (worker) setWorkerToView(worker);
+        const { employeeId } = cell.getData();
+        const employee = employeesRef.current.find(w => w.id === employeeId);
+        if (employee) setEmployeeToView(employee);
       },
     },
   ], []);
 
-  const tabClass = (section: 'activities' | 'workers') =>
+  const tabClass = (section: 'activities' | 'employees') =>
     activeSection === section
       ? 'border-primary text-primary whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm'
       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm';
@@ -268,7 +268,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers = [], onBack }) =
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-6">
             <button className={tabClass('activities')} onClick={() => setActiveSection('activities')}>Actividades</button>
-            <button className={tabClass('workers')} onClick={() => setActiveSection('workers')}>Empleados</button>
+            <button className={tabClass('employees')} onClick={() => setActiveSection('employees')}>Empleados</button>
           </nav>
         </div>
 
@@ -299,16 +299,16 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers = [], onBack }) =
           </div>
         )}
 
-        {activeSection === 'workers' && (
+        {activeSection === 'employees' && (
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="p-4 bg-gray-50 border-b">
               <h2 className="text-2xl font-bold text-dark-gray">Empleados</h2>
             </div>
             <div className="p-4">
-              {workerTableData.length ? (
+              {employeeTableData.length ? (
                 <ReactTabulator
-                  data={workerTableData}
-                  columns={workerColumns}
+                  data={employeeTableData}
+                  columns={employeeColumns}
                   layout="fitColumns"
                   options={{ movableColumns: false }}
                 />
@@ -431,11 +431,11 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers = [], onBack }) =
 
       {/* Drawer: actividades completadas por empleado */}
       <Drawer
-        isOpen={workerToView !== null}
-        onClose={() => setWorkerToView(null)}
-        title={workerToView?.name ?? ''}
+        isOpen={employeeToView !== null}
+        onClose={() => setEmployeeToView(null)}
+        title={employeeToView?.name ?? ''}
       >
-        {workerToView && (
+        {employeeToView && (
           <>
             <p className="text-xs text-gray-400 mb-4">{plan.title}</p>
             {activities.length ? (

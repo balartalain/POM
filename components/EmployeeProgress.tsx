@@ -3,11 +3,11 @@ import React, { useMemo } from 'react';
 import { Plan, ActivityStatus } from '../types';
 import ProgressBar from './ProgressBar';
 
-interface WorkerProgressProps {
+interface EmployeeProgressProps {
   plans: Plan[];
 }
 
-const WorkerProgress: React.FC<WorkerProgressProps> = ({ plans }) => {
+const EmployeeProgress: React.FC<EmployeeProgressProps> = ({ plans }) => {
   const progressData = useMemo(() => {
     const allActivities = plans.flatMap(p => p.activities);
     const allCompletions = allActivities.flatMap(a => a.completions);
@@ -32,4 +32,4 @@ const WorkerProgress: React.FC<WorkerProgressProps> = ({ plans }) => {
   );
 };
 
-export default WorkerProgress;
+export default EmployeeProgress;

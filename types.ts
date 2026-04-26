@@ -1,7 +1,7 @@
 
 export enum Role {
   SUPERVISOR = 'supervisor',
-  WORKER = 'worker',
+  EMPLOYEE = 'employee',
 }
 
 export interface User {
@@ -17,7 +17,7 @@ export enum ActivityStatus {
 }
 
 export interface ActivityCompletion {
-  workerId: number;
+  employeeId: number;
   status: ActivityStatus;
   completedAt?: string;
   evidenceFile?: string;
