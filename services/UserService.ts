@@ -38,7 +38,7 @@ const mapApiUser = (u: ApiUser): User => ({
   id: u.id,
   username: u.username,
   name: `${u.first_name} ${u.last_name}`.trim(),
-  role: u.role === 'supervisor' ? Role.SUPERVISOR : Role.EMPLOYEE,
+  role: u.is_employ ? Role.EMPLOYEE : Role.SUPERVISOR,
 });
 
 const mapApiUserWithCompletion = (u: ApiUserWithCompletion): UserWithCompletion => ({

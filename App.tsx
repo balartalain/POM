@@ -4,7 +4,7 @@ import Pusher from 'pusher-js';
 import { User, Role } from './types';
 import { userService } from './services/UserService';
 import Login from './components/Login';
-import SupervisorDashboard from './components/SupervisorDashboard';
+import SupervisorLayout from './components/SupervisorLayout';
 import EmployeeDashboard from './components/EmployeeDashboard';
 import Header from './components/Header';
 import { ToastProvider } from './contexts/ToastContext';
@@ -59,7 +59,7 @@ const App: React.FC = () => {
         <Header user={currentUser} onLogout={handleLogout} />
         <main className="p-4 sm:p-6 lg:p-8">
           {currentUser.role === Role.SUPERVISOR ? (
-            <SupervisorDashboard supervisor={currentUser} />
+            <SupervisorLayout supervisor={currentUser} />
           ) : (
             <EmployeeDashboard employee={currentUser} />
           )}
