@@ -156,6 +156,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
     return (
       <PlanDetail
         plan={selectedPlan}
+        workers={[]}
         onBack={handleBackToDashboard}
         onUpdatePlan={handleUpdatePlan}
       />

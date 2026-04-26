@@ -1,18 +1,20 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ReactTabulator, ColumnDefinition } from 'react-tabulator';
 import 'react-tabulator/lib/styles.css';
 import 'react-tabulator/lib/css/tabulator_bootstrap3.min.css';
-import { Plan, Activity } from '../types';
+import { Plan, Activity, User } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import Drawer from './Drawer';
 import { ArrowLeftIcon, PlusIcon } from './Icons';
 import { useToast } from '../hooks/useToast';
 import { activityService } from '../services/ActivityService';
+import { userService, UserWithCompletion } from '../services/UserService';
 import Spinner from './shared/Spinner';
 
 interface PlanDetailProps {
   plan: Plan;
+  workers?: User[];
   onBack: () => void;
   onUpdatePlan: (updatedPlan: Plan) => void;
 }
@@ -63,7 +65,8 @@ interface ActivityRow {
   progreso: number;
 }
 
-const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
+const PlanDetail: React.FC<PlanDetailProps> = ({ plan, workers = [], onBack }) => {
+  const [activeSection, setActiveSection] = useState<'activities' | 'workers'>('activities');
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -79,8 +82,26 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [workerToView, setWorkerToView] = useState<User | null>(null);
+  const [activityCompletions, setActivityCompletions] = useState<UserWithCompletion[]>([]);
+  const [loadingCompletions, setLoadingCompletions] = useState(false);
+
+  const workersRef = useRef(workers);
+  workersRef.current = workers;
 
   const { addToast } = useToast();
+
+  useEffect(() => {
+    if (!activityToView) return;
+    let cancelled = false;
+    setLoadingCompletions(true);
+    setActivityCompletions([]);
+    userService.getUsersByActivity(activityToView.id)
+      .then(data => { if (!cancelled) setActivityCompletions(data); })
+      .catch(() => { if (!cancelled) addToast('Error al cargar el progreso de la actividad.', 'error'); })
+      .finally(() => { if (!cancelled) setLoadingCompletions(false); });
+    return () => { cancelled = true; };
+  }, [activityToView?.id]);
 
   useEffect(() => {
     let cancelled = false;
@@ -130,6 +151,35 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
       cellClick: handleCellClick,
     },
   ], []);
+
+  const workerTableData = useMemo(() =>
+    workers.map(worker => ({
+      workerId: worker.id,
+      nombre: worker.name,
+      tareas: `0/${activities.length}`,
+      progreso: 0,
+    })),
+  [workers, activities]);
+
+  const workerColumns: ColumnDefinition[] = useMemo(() => [
+    { title: 'Nombre',   field: 'nombre',  widthGrow: 2, headerSort: true },
+    { title: 'Tareas',   field: 'tareas',  width: 90, hozAlign: 'center' as const, headerSort: false },
+    {
+      title: 'Progreso', field: 'progreso', widthGrow: 2, headerSort: true, formatter: progressFormatter,
+      cellClick: (_e: any, cell: any) => {
+        const target = _e.target as HTMLElement;
+        if (target.dataset.action !== 'view') return;
+        const { workerId } = cell.getData();
+        const worker = workersRef.current.find(w => w.id === workerId);
+        if (worker) setWorkerToView(worker);
+      },
+    },
+  ], []);
+
+  const tabClass = (section: 'activities' | 'workers') =>
+    activeSection === section
+      ? 'border-primary text-primary whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm'
+      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm';
 
   const handleAddActivity = async () => {
     if (!newTitle.trim() || !newDescription.trim()) {
@@ -215,30 +265,59 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          <div className="p-4 bg-gray-50 border-b flex justify-between items-center flex-wrap gap-3">
-            <h2 className="text-2xl font-bold text-dark-gray">Actividades</h2>
-            <button
-              onClick={() => setIsAddOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
-            >
-              <PlusIcon className="w-5 h-5" />
-              Añadir Actividad
-            </button>
-          </div>
-          <div className="p-4">
-            {loading ? (
-              <p className="text-center text-dark-gray py-8">Cargando actividades...</p>
-            ) : (
-              <ReactTabulator
-                data={tableData}
-                columns={columns}
-                layout="fitColumns"
-                options={{ movableColumns: true }}
-              />
-            )}
-          </div>
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex space-x-6">
+            <button className={tabClass('activities')} onClick={() => setActiveSection('activities')}>Actividades</button>
+            <button className={tabClass('workers')} onClick={() => setActiveSection('workers')}>Empleados</button>
+          </nav>
         </div>
+
+        {activeSection === 'activities' && (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-4 bg-gray-50 border-b flex justify-between items-center flex-wrap gap-3">
+              <h2 className="text-2xl font-bold text-dark-gray">Actividades</h2>
+              <button
+                onClick={() => setIsAddOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
+              >
+                <PlusIcon className="w-5 h-5" />
+                Añadir Actividad
+              </button>
+            </div>
+            <div className="p-4">
+              {loading ? (
+                <p className="text-center text-dark-gray py-8">Cargando actividades...</p>
+              ) : (
+                <ReactTabulator
+                  data={tableData}
+                  columns={columns}
+                  layout="fitColumns"
+                  options={{ movableColumns: true }}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeSection === 'workers' && (
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-4 bg-gray-50 border-b">
+              <h2 className="text-2xl font-bold text-dark-gray">Empleados</h2>
+            </div>
+            <div className="p-4">
+              {workerTableData.length ? (
+                <ReactTabulator
+                  data={workerTableData}
+                  columns={workerColumns}
+                  layout="fitColumns"
+                  options={{ movableColumns: false }}
+                />
+              ) : (
+                <p className="text-center text-gray-400 py-8 text-sm">No hay empleados asignados a este plan.</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Drawer: añadir actividad */}
@@ -317,8 +396,73 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
         onClose={() => setActivityToView(null)}
         title={`Progreso — ${activityToView?.titulo ?? ''}`}
       >
-        {activityToView && (
-          <p className="text-center text-gray-400 py-8 text-sm">Ningún empleado ha completado esta actividad aún.</p>
+        {loadingCompletions ? (
+          <div className="flex justify-center py-10"><Spinner className="h-6 w-6 text-primary" /></div>
+        ) : activityCompletions.length ? (
+          <div className="space-y-3">
+            {activityCompletions.map(u => (
+              <div key={u.id} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-800 text-sm">{u.name}</p>
+                  {u.completion.observations && (
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{u.completion.observations}</p>
+                  )}
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {new Date(u.completion.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
+                  </p>
+                </div>
+                {u.completion.evidenceUrl && (
+                  <a
+                    href={u.completion.evidenceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary font-medium hover:underline whitespace-nowrap"
+                  >
+                    Ver evidencia
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-center text-gray-400 py-10 text-sm">Ningún empleado ha completado esta actividad aún.</p>
+        )}
+      </Drawer>
+
+      {/* Drawer: actividades completadas por empleado */}
+      <Drawer
+        isOpen={workerToView !== null}
+        onClose={() => setWorkerToView(null)}
+        title={workerToView?.name ?? ''}
+      >
+        {workerToView && (
+          <>
+            <p className="text-xs text-gray-400 mb-4">{plan.title}</p>
+            {activities.length ? (
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="px-3 py-2 border-b">Actividad</th>
+                    <th className="px-3 py-2 border-b">Descripción</th>
+                    <th className="px-3 py-2 border-b text-center">Estado</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {activities.map(act => (
+                    <tr key={act.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2.5 text-gray-800">{act.title}</td>
+                      <td className="px-3 py-2.5 text-gray-500 text-xs">{act.description}</td>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-full px-2 py-0.5">Pendiente</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-center text-gray-400 py-8 text-sm">Este plan no tiene actividades aún.</p>
+            )}
+          </>
         )}
       </Drawer>
 
