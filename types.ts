@@ -25,8 +25,9 @@ export interface ActivityCompletion {
 
 export interface Activity {
   id: number;
-  name: string;
-  completions: ActivityCompletion[];
+  plan_id: number;
+  title: string;
+  description: string;
 }
 
 export interface Plan {
