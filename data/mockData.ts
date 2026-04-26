@@ -2,9 +2,9 @@
 import { User, Plan, Role, ActivityStatus } from '../types';
 
 export const USERS: User[] = [
-  { id: 1, name: 'Alicia Supervisora', username: 'supervisor', role: Role.SUPERVISOR },
-  { id: 2, name: 'Roberto Trabajador', username: 'worker1', role: Role.WORKER },
-  { id: 3, name: 'Carlos Trabajador', username: 'worker2', role: Role.WORKER },
+  { id: 2, name: 'Alain Supervisor', username: 'supervisor', role: Role.SUPERVISOR },
+  { id: 3, name: 'Roberto Trabajador', username: 'worker1', role: Role.WORKER },
+  { id: 4, name: 'Carlos Trabajador', username: 'worker2', role: Role.WORKER },
 ];
 
 const WORKERS = USERS.filter(u => u.role === Role.WORKER);

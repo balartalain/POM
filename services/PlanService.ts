@@ -50,7 +50,7 @@ class PlanService {
   }
 
   /** POST /api/v1/planes/ */
-  async createPlan(plan: Pick<Plan, 'title' | 'expiration_date'>): Promise<Plan> {
+  async createPlan(plan: Pick<Plan, 'title' | 'expiration_date' | 'supervisor_id'>): Promise<Plan> {
     return this.request<Plan>('/api/v1/planes/', {
       method: 'POST',
       body: JSON.stringify(plan),

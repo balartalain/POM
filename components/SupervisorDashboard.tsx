@@ -49,7 +49,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
   }, [selectedYear]);
 
   const filteredPlans = useMemo(() =>
-    [...plans].sort((a, b) => new Date(a.expiration_date).getTime() - new Date(b.expiration_date).getTime()),
+    [...plans].sort((a, b) => b.month - a.month || new Date(b.expiration_date).getTime() - new Date(a.expiration_date).getTime()),
   [plans]);
 
   const plansByMonth = useMemo(() =>
@@ -97,6 +97,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         const created = await planService.createPlan({
           title: newPlanName,
           expiration_date: newPlanDeadline,
+          supervisor_id: supervisor.id,
         });
         setPlans(prev => [created, ...prev]);
         addToast('Nuevo plan creado con éxito.', 'success');
