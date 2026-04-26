@@ -7,7 +7,7 @@ interface ApiUser {
   first_name: string;
   last_name: string;
   email: string;
-  is_employ: boolean;
+  role: string;
 }
 
 interface ApiActivityCompletion {
@@ -38,7 +38,7 @@ const mapApiUser = (u: ApiUser): User => ({
   id: u.id,
   username: u.username,
   name: `${u.first_name} ${u.last_name}`.trim(),
-  role: u.is_employ ? Role.EMPLOYEE : Role.SUPERVISOR,
+  role: u.role=== 'employee' ? Role.EMPLOYEE : Role.SUPERVISOR,
 });
 
 const mapApiUserWithCompletion = (u: ApiUserWithCompletion): UserWithCompletion => ({

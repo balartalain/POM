@@ -4,6 +4,7 @@ import { User, Plan } from '../types';
 import { planService } from '../services/PlanService';
 import PlanCard from './PlanCard';
 import EmployeePlanDetail from './EmployeePlanDetail';
+import Spinner from './shared/Spinner';
 
 interface EmployeeDashboardProps {
   employee: User;
@@ -73,8 +74,8 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ employee }) => {
       </div>
 
       {loading ? (
-        <div className="text-center text-dark-gray p-8 bg-white rounded-lg shadow">
-          <p>Cargando planes...</p>
+        <div className="flex justify-center p-8 bg-white rounded-lg shadow">
+          <Spinner className="h-6 w-6 text-primary" />
         </div>
       ) : error ? (
         <div className="text-center text-red-600 p-8 bg-white rounded-lg shadow">

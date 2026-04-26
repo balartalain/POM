@@ -186,8 +186,8 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
         </div>
 
         {loading ? (
-          <div className="text-center text-dark-gray p-8 bg-white rounded-lg shadow">
-            <p>Cargando planes...</p>
+          <div className="flex justify-center p-8 bg-white rounded-lg shadow">
+            <Spinner className="h-6 w-6 text-primary" />
           </div>
         ) : error ? (
           <div className="text-center text-red-600 p-8 bg-white rounded-lg shadow">

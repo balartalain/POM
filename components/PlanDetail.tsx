@@ -286,7 +286,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
             </div>
             <div className="p-4">
               {loading ? (
-                <p className="text-center text-dark-gray py-8">Cargando actividades...</p>
+                <div className="flex justify-center py-8"><Spinner className="h-6 w-6 text-primary" /></div>
               ) : (
                 <ReactTabulator
                   data={tableData}
