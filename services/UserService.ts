@@ -34,6 +34,26 @@ export interface UserWithCompletion extends User {
   completion: ActivityCompletion;
 }
 
+export interface UserActivity {
+  id: number;
+  planId: number;
+  title: string;
+  description: string;
+  completed: boolean;
+  completedAt: string | null;
+  evidenceUrl: string | null;
+}
+
+interface ApiUserActivity {
+  id: number;
+  plan_id: number;
+  title: string;
+  description: string;
+  completed: boolean;
+  completed_at: string | null;
+  evidence_url: string | null;
+}
+
 const mapApiUser = (u: ApiUser): User => ({
   id: u.id,
   username: u.username,
@@ -77,6 +97,20 @@ class UserService {
   async getUsers(): Promise<User[]> {
     const data = await this.request<ApiUser[]>('/api/v1/usuarios/');
     return data.map(mapApiUser);
+  }
+
+  /** GET /api/v1/usuarios/{userId}/actividades/?year={year} */
+  async getUserActivities(userId: number, year: number): Promise<UserActivity[]> {
+    const data = await this.request<ApiUserActivity[]>(`/api/v1/usuarios/${userId}/actividades/?year=${year}`);
+    return data.map(a => ({
+      id: a.id,
+      planId: a.plan_id,
+      title: a.title,
+      description: a.description,
+      completed: a.completed,
+      completedAt: a.completed_at,
+      evidenceUrl: a.evidence_url,
+    }));
   }
 
   /** GET /api/v1/usuarios/actividad/{activity_id}/ */
