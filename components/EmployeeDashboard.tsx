@@ -58,7 +58,7 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ employee }) => {
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <h2 className="text-2xl font-bold text-dark-gray">Mis Planes del Año {selectedYear}</h2>
+        <h2 className="text-2xl font-bold text-dark-gray">Planes del Año {selectedYear}</h2>
         <div className="flex items-center gap-2">
           <label htmlFor="year-select" className="text-sm font-medium text-dark-gray">Año:</label>
           <select

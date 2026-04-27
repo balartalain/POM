@@ -107,9 +107,9 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
   };
 
   const getBorderColor = (percent: number) => {
-    if (percent >= 70) return 'border-emerald-400';
-    if (percent >= 30) return 'border-amber-400';
-    return 'border-red-400';
+    if (percent >= 70) return 'border-l-emerald-400';
+    if (percent >= 30) return 'border-l-amber-400';
+    return 'border-l-red-400';
   };
 
   const getBadgeStyles = (color: string) => {
@@ -215,7 +215,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
     <div className="space-y-6 font-['DM_Sans']">
       <button onClick={onBack} className="flex items-center gap-2 text-sm font-semibold text-[#1e3a8a] hover:underline mb-4">
         <ArrowLeftIcon className="w-5 h-5" />
-        Volver al Panel
+        Planes
       </button>
 
       <div className="bg-white border border-slate-200 rounded-xl p-7">
@@ -272,11 +272,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
         <div className="space-y-4">
           {activities.length > 0 ? activities.map(activity => {
             const { completedCount, pendingCount, percent } = getActivityMetrics(activity);
-            const level = getCompletitudLevel(percent);
             const borderColor = getBorderColor(percent);
-            const badgeStyles = getBadgeStyles(level.color);
-            const progressColor = getProgressBarColor(percent);
-            const pendingColor = getPendingColor(pendingCount);
 
             return (
               <div key={activity.id} className={`bg-white border border-slate-200 rounded-xl overflow-hidden border-l-4 ${borderColor}`}>
@@ -284,26 +280,6 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-1">
                       <h3 className="text-sm font-semibold text-slate-800">{activity.title}</h3>
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full ${badgeStyles}`}>
-                        {level.color === 'emerald' && (
-                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <path d="M20 6L9 17l-5-5" />
-                          </svg>
-                        )}
-                        {level.color === 'blue' && (
-                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M12 6v6l4 2" />
-                          </svg>
-                        )}
-                        {level.color === 'red' && (
-                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10" />
-                            <path d="M15 9l-6 6M9 9l6 6" />
-                          </svg>
-                        )}
-                        {level.level}
-                      </span>
                     </div>
                     <p className="text-xs text-slate-400 leading-relaxed">{activity.description}</p>
                   </div>
@@ -314,7 +290,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
                     </div>
                     <div className="w-px h-10 bg-slate-100"></div>
                     <div className="text-center">
-                      <p className={`text-xl font-semibold leading-none ${pendingColor}`}>{pendingCount}</p>
+                      <p className="text-xl font-semibold text-slate-400 leading-none">{pendingCount}</p>
                       <p className="text-xs text-slate-400 mt-1">Faltan</p>
                     </div>
                     <div className="w-px h-10 bg-slate-100"></div>
@@ -326,7 +302,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
                 </div>
                 <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-4">
                   <div className="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                    <div className={`h-full rounded-full ${progressColor}`} style={{ width: `${percent}%` }}></div>
+                    <div className="h-full rounded-full bg-emerald-500" style={{ width: `${percent}%` }}></div>
                   </div>
                   <button
                     onClick={() => setActivityToView(activity)}

@@ -97,7 +97,7 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
     <div className="space-y-6 font-['DM_Sans']">
       <button onClick={onBack} className="flex items-center gap-2 text-sm font-semibold text-[#1e3a8a] hover:underline mb-4">
         <ArrowLeftIcon className="w-5 h-5" />
-        Volver a Mis Planes
+        Planes
       </button>
 
       <div className="bg-white border border-slate-200 rounded-xl p-7">
