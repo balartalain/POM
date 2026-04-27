@@ -1,0 +1,32 @@
+Crea un componente React con Tailwind CSS para la vista de un empleado en una app llamada PAME (Plan de Actividades Mensual).
+
+LAYOUT:
+- Sidebar fijo de 224px a la izquierda con fondo azul navy (#1e3a8a)
+- Sidebar tiene: logo "P" + texto "PAME", dos items de navegación (Planes, Empleados), perfil del usuario al fondo
+- El item activo tiene fondo blanco/17% de opacidad
+- Topbar de 56px con mismo azul navy, título del sistema a la izquierda, botón de salir a la derecha
+- Contenido con fondo slate-100, padding 32px horizontal y 28px vertical
+
+CONTENIDO (en este orden):
+1. Banner del plan: fondo blanco, borde slate-200, border-radius xl, padding 28px. Muestra título del plan (texto grande azul navy), subtítulo con mes y fecha límite. A la derecha 3 tarjetas de métricas: "Completadas" (fondo emerald-50, número emerald-600), "Pendientes" (fondo amber-50, número amber-500), "Total" (fondo slate-100, número slate-500)
+
+2. Barra de progreso general: fondo blanco, border-radius xl, padding 16px 28px. Label "Progreso general" a la izquierda, barra de progreso en el centro (bg-slate-100, fill bg-emerald-500, height 8px, rounded-full), porcentaje en verde a la derecha
+
+3. Lista de actividades con título de sección "ACTIVIDADES" en mayúsculas slate-500
+
+Cada actividad es una tarjeta blanca con borde slate-200 y border-radius xl que tiene:
+- Borde izquierdo de 4px: verde (border-emerald-400) si completada, ámbar (border-amber-400) si pendiente
+- Cuerpo (padding 24px): título de la actividad (font-semibold slate-800), descripción (text-xs slate-400)
+- A la derecha del cuerpo: badge de estado redondeado. Si completada: bg-emerald-50 text-emerald-600 con ícono check. Si pendiente: bg-amber-50 text-amber-500 con ícono reloj. Si completada también mostrar enlace "Ver evidencia" en azul con ícono de enlace externo
+- Footer de la tarjeta con fondo slate-50 y borde superior slate-100:
+  - Si completada: ícono reloj + texto "Completada el [fecha]"
+  - Si pendiente: ícono de enlace + texto "Para completar esta actividad, pega el enlace de tu evidencia en Google Drive" + botón azul navy "Pegar enlace de evidencia"
+
+FUENTE: DM Sans de Google Fonts
+COLORES PRINCIPALES: navy-700 = #1e3a8a, navy-800 = #162d6e
+
+Props del componente:
+- plan: { title, month, expiration_date }
+- activities: [{ id, title, description, completion: { completed_at, evidence_url } | null }]
+- employee: { full_name, initials }
+- stats: { completed, pending, total, progress_pct }

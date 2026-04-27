@@ -1,0 +1,38 @@
+Crea un componente React con Tailwind CSS para la vista del supervisor en una app llamada PAME (Plan de Actividades Mensual).
+
+LAYOUT:
+- Sidebar fijo de 224px con fondo azul navy (#1e3a8a)
+- Sidebar tiene: logo "P" + texto "PAME", dos items de navegación (Planes activo, Empleados), perfil del supervisor al fondo
+- Topbar de 56px azul navy, título a la izquierda, botón salir a la derecha
+- Breadcrumb debajo del topbar: "← Planes / [nombre del plan]" en azul navy
+- Contenido con fondo slate-100, padding 32px horizontal y 28px vertical
+
+CONTENIDO (en este orden):
+1. Banner del plan: fondo blanco, título grande azul navy, subtítulo con mes + fecha límite + número de empleados. A la derecha 3 métricas: "Actividades completas" (emerald), "Pendientes" (amber), "Total" (slate)
+
+2. Barra de progreso general del plan: label + barra (bg-emerald-500) + porcentaje verde
+
+3. Header de sección: texto "ACTIVIDADES" en mayúsculas slate-500 a la izquierda + botón "Añadir actividad" azul navy a la derecha
+
+4. Lista de actividades
+
+Cada actividad es una tarjeta blanca con borde slate-200 y border-radius xl:
+- Borde izquierdo 4px de color dinámico: emerald-400 si completitud >= 70%, amber-400 si entre 30-69%, red-400 si < 30%
+- Cuerpo (padding 24px): a la izquierda título + badge de estado + descripción. El badge es dinámico: "Alta completitud" bg-emerald-50 text-emerald-600 si >= 70%, "En progreso" bg-blue-50 text-blue-600 si entre 30-69%, "Baja completitud" bg-red-50 text-red-500 si < 30%
+- A la derecha del cuerpo: 3 métricas separadas por divisores verticales (w-px h-10 bg-slate-100):
+  1. Número de empleados que completaron (text-emerald-600)
+  2. Número que faltan (color dinámico: amber-500 si > 0 pero < mitad, red-500 si es mayoría)
+  3. Porcentaje completado (text-navy-700)
+  Cada métrica tiene un label debajo en text-xs text-slate-400
+- Footer con fondo slate-50: barra de progreso delgada (h-1.5) con color dinámico (emerald/blue/red según completitud) + enlace "Ver progreso →" en azul navy a la derecha
+
+FUENTE: DM Sans de Google Fonts
+COLORES: navy-700 = #1e3a8a, navy-800 = #162d6e
+
+Props del componente:
+- plan: { title, month, expiration_date, total_employees }
+- activities: [{ id, title, description, completed_count, pending_count, total_employees, progress_pct }]
+- supervisor: { full_name, initials }
+- stats: { completed_activities, pending_activities, total_activities, plan_progress_pct }
+- onViewProgress: (activityId) => void
+- onAddActivity: () => void

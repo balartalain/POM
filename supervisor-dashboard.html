@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PAME – Vista Supervisor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['DM Sans', 'sans-serif'] },
+          colors: {
+            navy: {
+              50:  '#f0f4ff',
+              100: '#e0e9ff',
+              600: '#2d4faa',
+              700: '#1e3a8a',
+              800: '#162d6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'DM Sans', sans-serif; }
+    .sidebar-item { transition: background 0.15s, color 0.15s; }
+    .progress-bar { transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+    .act-card { transition: box-shadow 0.15s; }
+    .act-card:hover { box-shadow: 0 2px 12px rgba(30,58,138,0.08); }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800">
+
+<div class="flex h-screen overflow-hidden">
+
+  <!-- Sidebar -->
+  <aside class="w-56 bg-navy-700 flex flex-col flex-shrink-0">
+    <div class="flex items-center gap-3 px-5 py-4 border-b border-white/10 h-14">
+      <div class="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">P</div>
+      <span class="text-white text-sm font-semibold tracking-wide">PAME</span>
+    </div>
+    <nav class="flex-1 px-3 py-3 flex flex-col gap-1">
+      <a href="#" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/[0.17] text-white text-sm font-medium">
+        <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Planes
+      </a>
+      <a href="#" class="sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/60 hover:bg-white/10 hover:text-white text-sm font-medium">
+        <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Empleados
+      </a>
+    </nav>
+    <div class="px-4 py-4 border-t border-white/10">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">AS</div>
+        <div class="overflow-hidden">
+          <p class="text-white text-xs font-medium truncate">Alain Supervisor</p>
+          <p class="text-white/50 text-xs">Supervisor</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+
+    <!-- Topbar -->
+    <header class="bg-navy-700 h-14 flex items-center justify-between px-8 flex-shrink-0">
+      <span class="text-white text-sm font-semibold tracking-wide">Plan de Actividades Mensual – PAME</span>
+      <button class="flex items-center gap-2 text-white/60 hover:text-white transition-colors">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        <span class="text-xs">Salir</span>
+      </button>
+    </header>
+
+    <!-- Content -->
+    <main class="flex-1 overflow-y-auto px-8 py-7 flex flex-col gap-6">
+
+      <!-- Breadcrumb -->
+      <div class="flex items-center gap-2 text-sm">
+        <a href="#" class="text-navy-700 hover:underline flex items-center gap-1">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+          Planes
+        </a>
+        <span class="text-slate-300">/</span>
+        <span class="text-slate-500">Mi primer plan de Abril</span>
+      </div>
+
+      <!-- Plan banner -->
+      <div class="bg-white border border-slate-200 rounded-xl px-7 py-5 flex items-center justify-between gap-6">
+        <div>
+          <h1 class="text-xl font-semibold text-navy-700 mb-1">Mi primer plan de Abril</h1>
+          <p class="text-sm text-slate-400">Abril 2026 · Fecha límite: <span class="text-slate-500 font-medium">30/4/2026</span> · <span class="text-slate-500 font-medium">6 empleados</span></p>
+        </div>
+        <div class="flex gap-3 flex-shrink-0">
+          <div class="bg-emerald-50 rounded-lg px-5 py-3 text-center min-w-[72px]">
+            <p class="text-2xl font-semibold text-emerald-600 leading-none mb-1">2</p>
+            <p class="text-xs text-emerald-500">Actividades</p>
+            <p class="text-xs text-emerald-400">completas</p>
+          </div>
+          <div class="bg-amber-50 rounded-lg px-5 py-3 text-center min-w-[72px]">
+            <p class="text-2xl font-semibold text-amber-500 leading-none mb-1">1</p>
+            <p class="text-xs text-amber-400">Pendientes</p>
+          </div>
+          <div class="bg-slate-100 rounded-lg px-5 py-3 text-center min-w-[72px]">
+            <p class="text-2xl font-semibold text-slate-500 leading-none mb-1">3</p>
+            <p class="text-xs text-slate-400">Total</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="bg-white border border-slate-200 rounded-xl px-7 py-4 flex items-center gap-5">
+        <span class="text-sm text-slate-500 whitespace-nowrap">Progreso general del plan</span>
+        <div class="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
+          <div class="progress-bar h-full bg-emerald-500 rounded-full" style="width: 67%"></div>
+        </div>
+        <span class="text-sm font-semibold text-emerald-600 whitespace-nowrap">67%</span>
+      </div>
+
+      <!-- Section header -->
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Actividades</h2>
+        <button class="inline-flex items-center gap-2 text-xs font-medium bg-navy-700 hover:bg-navy-800 text-white px-4 py-2 rounded-lg transition-colors">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Añadir actividad
+        </button>
+      </div>
+
+      <!-- Activity cards -->
+      <div class="flex flex-col gap-3">
+
+        <!-- Activity 1 — high completion -->
+        <div class="act-card bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="flex items-start gap-6 px-6 py-5 border-l-4 border-emerald-400">
+            <!-- Info -->
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-3 mb-1">
+                <h3 class="text-sm font-semibold text-slate-800">Recopilar datos de ventas del T1</h3>
+                <span class="inline-flex items-center gap-1 text-xs font-medium bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-full">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+                  Alta completitud
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">Consolidar cifras de ventas del primer trimestre por región y producto.</p>
+            </div>
+            <!-- Stats -->
+            <div class="flex items-center gap-6 flex-shrink-0">
+              <!-- Completados -->
+              <div class="text-center">
+                <p class="text-xl font-semibold text-emerald-600 leading-none">5</p>
+                <p class="text-xs text-slate-400 mt-1">Completaron</p>
+              </div>
+              <div class="w-px h-10 bg-slate-100"></div>
+              <!-- Faltan -->
+              <div class="text-center">
+                <p class="text-xl font-semibold text-slate-400 leading-none">1</p>
+                <p class="text-xs text-slate-400 mt-1">Faltan</p>
+              </div>
+              <div class="w-px h-10 bg-slate-100"></div>
+              <!-- % -->
+              <div class="text-center min-w-[48px]">
+                <p class="text-xl font-semibold text-navy-700 leading-none">83%</p>
+                <p class="text-xs text-slate-400 mt-1">Completado</p>
+              </div>
+            </div>
+          </div>
+          <!-- Progress + actions -->
+          <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-4">
+            <div class="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+              <div class="progress-bar h-full bg-emerald-500 rounded-full" style="width:83%"></div>
+            </div>
+            <a href="#" class="text-xs text-navy-700 hover:underline font-medium whitespace-nowrap">Ver progreso →</a>
+          </div>
+        </div>
+
+        <!-- Activity 2 — medium completion -->
+        <div class="act-card bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="flex items-start gap-6 px-6 py-5 border-l-4 border-emerald-400">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-3 mb-1">
+                <h3 class="text-sm font-semibold text-slate-800">Análisis de indicadores financieros</h3>
+                <span class="inline-flex items-center gap-1 text-xs font-medium bg-blue-50 text-blue-600 px-2.5 py-1 rounded-full">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  En progreso
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">Revisar KPIs financieros del trimestre y preparar resumen ejecutivo.</p>
+            </div>
+            <div class="flex items-center gap-6 flex-shrink-0">
+              <div class="text-center">
+                <p class="text-xl font-semibold text-emerald-600 leading-none">3</p>
+                <p class="text-xs text-slate-400 mt-1">Completaron</p>
+              </div>
+              <div class="w-px h-10 bg-slate-100"></div>
+              <div class="text-center">
+                <p class="text-xl font-semibold text-amber-500 leading-none">3</p>
+                <p class="text-xs text-slate-400 mt-1">Faltan</p>
+              </div>
+              <div class="w-px h-10 bg-slate-100"></div>
+              <div class="text-center min-w-[48px]">
+                <p class="text-xl font-semibold text-navy-700 leading-none">50%</p>
+                <p class="text-xs text-slate-400 mt-1">Completado</p>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-4">
+            <div class="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+              <div class="progress-bar h-full bg-blue-400 rounded-full" style="width:50%"></div>
+            </div>
+            <a href="#" class="text-xs text-navy-700 hover:underline font-medium whitespace-nowrap">Ver progreso →</a>
+          </div>
+        </div>
+
+        <!-- Activity 3 — low completion -->
+        <div class="act-card bg-white border border-slate-200 rounded-xl overflow-hidden">
+          <div class="flex items-start gap-6 px-6 py-5 border-l-4 border-amber-400">
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-3 mb-1">
+                <h3 class="text-sm font-semibold text-slate-800">Redacción del informe final</h3>
+                <span class="inline-flex items-center gap-1 text-xs font-medium bg-red-50 text-red-500 px-2.5 py-1 rounded-full">
+                  <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                  Baja completitud
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 leading-relaxed">Elaborar el informe trimestral consolidado con todos los hallazgos del periodo.</p>
+            </div>
+            <div class="flex items-center gap-6 flex-shrink-0">
+              <div class="text-center">
+                <p class="text-xl font-semibold text-emerald-600 leading-none">1</p>
+                <p class="text-xs text-slate-400 mt-1">Completaron</p>
+              </div>
+              <div class="w-px h-10 bg-slate-100"></div>
+              <div class="text-center">
+                <p class="text-xl font-semibold text-red-500 leading-none">5</p>
+                <p class="text-xs text-slate-400 mt-1">Faltan</p>
+              </div>
+              <div class="w-px h-10 bg-slate-100"></div>
+              <div class="text-center min-w-[48px]">
+                <p class="text-xl font-semibold text-navy-700 leading-none">17%</p>
+                <p class="text-xs text-slate-400 mt-1">Completado</p>
+              </div>
+            </div>
+          </div>
+          <div class="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-4">
+            <div class="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+              <div class="progress-bar h-full bg-red-400 rounded-full" style="width:17%"></div>
+            </div>
+            <a href="#" class="text-xs text-navy-700 hover:underline font-medium whitespace-nowrap">Ver progreso →</a>
+          </div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+</body>
+</html>
