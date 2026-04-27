@@ -4,6 +4,7 @@ import { ArrowLeftIcon, CheckCircleIcon, ClockIcon, LinkIcon, ExternalLinkIcon, 
 import { userService, UserActivity } from '../services/UserService';
 import Drawer from './Drawer';
 import Spinner from './shared/Spinner';
+import { useToast } from '../hooks/useToast';
 
 const MONTH_NAMES: Record<number, string> = {
   1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
@@ -21,11 +22,17 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
   const [activities, setActivities] = useState<UserActivity[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   const [activityToUpload, setActivityToUpload] = useState<UserActivity | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [evidenceUrl, setEvidenceUrl] = useState('');
+  const [evidenceObservations, setEvidenceObservations] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showUrlDrawer, setShowUrlDrawer] = useState(false);
 
   const planYear = Number(plan.expiration_date.split('-')[0]);
 
@@ -63,6 +70,13 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
     setSelectedFile(null);
   };
 
+  const closeEvidenceDrawer = () => {
+    setActivityToUpload(null);
+    setShowUrlDrawer(false);
+    setEvidenceUrl('');
+    setEvidenceObservations('');
+  };
+
   const handleUpload = async () => {
     if (!selectedFile || !activityToUpload) return;
     setIsUploading(true);
@@ -71,6 +85,35 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
       closeDrawer();
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleSubmitEvidence = async () => {
+    if (!activityToUpload || !evidenceUrl.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const completion = await userService.completeActivity(
+        activityToUpload.id,
+        employee.id,
+        evidenceUrl.trim(),
+        evidenceObservations.trim() || undefined
+      );
+      setActivities(prev => prev.map(a => 
+        a.id === activityToUpload.id 
+          ? { 
+              ...a, 
+              completed: true, 
+              completedAt: completion.createdAt, 
+              evidenceUrl: completion.evidenceUrl 
+            }
+          : a
+      ));
+      addToast('Actividad completada con éxito.', 'success');
+      closeEvidenceDrawer();
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Error al completar la actividad.', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -206,7 +249,7 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
                     </svg>
                     <span className="text-xs text-slate-400 flex-1">Para completar esta actividad, pega el enlace de tu evidencia en Google Drive</span>
                     <button
-                      onClick={() => setActivityToUpload(activity)}
+                      onClick={() => { setActivityToUpload(activity); setShowUrlDrawer(true); }}
                       className="inline-flex items-center gap-2 text-xs font-medium bg-[#1e3a8a] hover:bg-[#162d6e] text-white px-4 py-2 rounded-lg transition-colors"
                     >
                       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -288,6 +331,58 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
           >
             {isUploading && <Spinner />}
             {isUploading ? 'Subiendo...' : 'Subir evidencia'}
+          </button>
+        </div>
+      </Drawer>
+
+      <Drawer
+        isOpen={showUrlDrawer}
+        onClose={closeEvidenceDrawer}
+        title={`Completar actividad — ${activityToUpload?.title ?? ''}`}
+      >
+        <div className="space-y-5">
+          <p className="text-sm text-gray-500">{activityToUpload?.description}</p>
+
+          <div>
+            <label htmlFor="evidenceUrl" className="block text-sm font-medium text-gray-700 mb-1">
+              Enlace de evidencia *
+            </label>
+            <input
+              type="url"
+              id="evidenceUrl"
+              value={evidenceUrl}
+              onChange={e => setEvidenceUrl(e.target.value)}
+              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+              placeholder="https://drive.google.com/..."
+            />
+          </div>
+
+          <div>
+            <label htmlFor="evidenceObservations" className="block text-sm font-medium text-gray-700 mb-1">
+              Observaciones (opcional)
+            </label>
+            <textarea
+              id="evidenceObservations"
+              value={evidenceObservations}
+              onChange={e => setEvidenceObservations(e.target.value)}
+              rows={3}
+              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+              placeholder="Agrega alguna observación sobre la evidencia..."
+            />
+          </div>
+        </div>
+
+        <div className="mt-8 flex justify-end gap-3 border-t pt-4">
+          <button onClick={closeEvidenceDrawer} disabled={isSubmitting} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm disabled:opacity-70">
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmitEvidence}
+            disabled={isSubmitting || !evidenceUrl.trim()}
+            className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isSubmitting && <Spinner />}
+            {isSubmitting ? 'Guardando...' : 'Completar actividad'}
           </button>
         </div>
       </Drawer>

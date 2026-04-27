@@ -119,6 +119,31 @@ class UserService {
     return data.map(mapApiUserWithCompletion);
   }
 
+  /** POST /api/v1/usuarios/completar-actividad/ */
+  async completeActivity(
+    activityId: number,
+    employeeId: number,
+    evidenceUrl: string,
+    observations?: string
+  ): Promise<ActivityCompletion> {
+    const data = await this.request<ApiActivityCompletion>('/api/v1/usuarios/completar-actividad/', {
+      method: 'POST',
+      body: JSON.stringify({
+        activity_id: activityId,
+        employee_id: employeeId,
+        evidence_url: evidenceUrl,
+        observations: observations || '',
+      }),
+    });
+    return {
+      id: data.id,
+      activityId: data.activity_id,
+      evidenceUrl: data.evidence_url,
+      observations: data.observations,
+      createdAt: data.created_at,
+    };
+  }
+
 }
 
 export const userService = new UserService();
