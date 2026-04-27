@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plan, Activity, User } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import Drawer from './Drawer';
-import { ArrowLeftIcon, PlusIcon, CheckCircleIcon, ClockIcon, ExternalLinkIcon } from './Icons';
+import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon } from './Icons';
 import { useToast } from '../hooks/useToast';
 import { activityService } from '../services/ActivityService';
 import { userService, UserWithCompletion } from '../services/UserService';
@@ -44,6 +44,13 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { addToast } = useToast();
+
+  useEffect(() => {
+    if (activityToEdit) {
+      setEditTitle(activityToEdit.title);
+      setEditDescription(activityToEdit.description);
+    }
+  }, [activityToEdit]);
 
   useEffect(() => {
     let cancelled = false;
@@ -212,240 +219,255 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
   }
 
   return (
-    <div className="space-y-6 font-['DM_Sans']">
-      <button onClick={onBack} className="flex items-center gap-2 text-sm font-semibold text-[#1e3a8a] hover:underline mb-4">
-        <ArrowLeftIcon className="w-5 h-5" />
-        Planes
-      </button>
+    <>
+      <div className="space-y-6 font-['DM_Sans']">
+        <button onClick={onBack} className="flex items-center gap-2 text-sm font-semibold text-[#1e3a8a] hover:underline mb-4">
+          <ArrowLeftIcon className="w-5 h-5" />
+          Planes
+        </button>
 
-      <div className="bg-white border border-slate-200 rounded-xl p-7">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-          <div>
-            <h3 className="text-2xl font-semibold text-[#1e3a8a]">{plan.title}</h3>
-            <p className="text-slate-500 mt-1">
-              {MONTH_NAMES[plan.month] || `Mes ${plan.month}`} • Fecha límite: {deadlineStr} • {totalEmployees} empleado{totalEmployees !== 1 ? 's' : ''}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <div className="bg-emerald-50 rounded-lg px-4 py-2 min-w-[100px] text-center">
-              <div className="text-2xl font-bold text-emerald-600">{metrics.completed}</div>
-              <div className="text-xs text-emerald-600">Completas</div>
+        <div className="bg-white border border-slate-200 rounded-xl p-7">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div>
+              <h3 className="text-2xl font-semibold text-[#1e3a8a]">{plan.title}</h3>
+              <p className="text-slate-500 mt-1">
+                {MONTH_NAMES[plan.month] || `Mes ${plan.month}`} • Fecha límite: {deadlineStr} • {totalEmployees} empleado{totalEmployees !== 1 ? 's' : ''}
+              </p>
             </div>
-            <div className="bg-amber-50 rounded-lg px-4 py-2 min-w-[100px] text-center">
-              <div className="text-2xl font-bold text-amber-500">{metrics.pending}</div>
-              <div className="text-xs text-amber-500">Pendientes</div>
-            </div>
-            <div className="bg-slate-100 rounded-lg px-4 py-2 min-w-[100px] text-center">
-              <div className="text-2xl font-bold text-slate-500">{metrics.total}</div>
-              <div className="text-xs text-slate-500">Total</div>
+            <div className="flex flex-wrap gap-3">
+              <div className="bg-emerald-50 rounded-lg px-4 py-2 min-w-[100px] text-center">
+                <div className="text-2xl font-bold text-emerald-600">{metrics.completed}</div>
+                <div className="text-xs text-emerald-600">Completas</div>
+              </div>
+              <div className="bg-amber-50 rounded-lg px-4 py-2 min-w-[100px] text-center">
+                <div className="text-2xl font-bold text-amber-500">{metrics.pending}</div>
+                <div className="text-xs text-amber-500">Pendientes</div>
+              </div>
+              <div className="bg-slate-100 rounded-lg px-4 py-2 min-w-[100px] text-center">
+                <div className="text-2xl font-bold text-slate-500">{metrics.total}</div>
+                <div className="text-xs text-slate-500">Total</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl px-7 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <span className="text-slate-600 font-medium whitespace-nowrap">Progreso general</span>
-          <div className="flex-1 mx-4">
-            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-                style={{ width: `${overallProgress}%` }}
+        <div className="bg-white border border-slate-200 rounded-xl px-7 py-4">
+          <div className="flex items-center justify-between gap-4">
+            <span className="text-slate-600 font-medium whitespace-nowrap">Progreso general</span>
+            <div className="flex-1 mx-4">
+              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                  style={{ width: `${overallProgress}%` }}
+                />
+              </div>
+            </div>
+            <span className="text-emerald-600 font-semibold whitespace-nowrap">{overallProgress}%</span>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Actividades</h4>
+            <button
+              onClick={() => setIsAddOpen(true)}
+              className="inline-flex items-center gap-2 text-xs font-medium bg-[#1e3a8a] hover:bg-[#162d6e] text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <PlusIcon className="w-4 h-4" />
+              Añadir actividad
+            </button>
+          </div>
+          <div className="space-y-4">
+            {activities.length > 0 ? activities.map(activity => {
+              const { completedCount, pendingCount, percent } = getActivityMetrics(activity);
+              const borderColor = getBorderColor(percent);
+
+              return (
+                <div key={activity.id} className={`bg-white border border-slate-200 rounded-xl overflow-hidden border-l-4 ${borderColor}`}>
+                  <div className="flex items-start gap-6 px-6 py-5">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="text-sm font-semibold text-slate-800">{activity.title}</h3>
+                        <button
+                          onClick={() => setActivityToEdit(activity)}
+                          className="p-1 text-gray-400 hover:text-blue-700 rounded-full hover:bg-blue-100 transition-all duration-200"
+                          aria-label={`Editar actividad ${activity.title}`}
+                        >
+                          <PencilIcon className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setActivityToDelete(activity)}
+                          className="p-1 text-gray-400 hover:text-red-700 rounded-full hover:bg-red-100 transition-all duration-200"
+                          aria-label={`Eliminar actividad ${activity.title}`}
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <p className="text-xs text-slate-400 leading-relaxed">{activity.description}</p>
+                    </div>
+                    <div className="flex items-center gap-6 flex-shrink-0">
+                      <div className="text-center">
+                        <p className="text-xl font-semibold text-emerald-600 leading-none">{completedCount}</p>
+                        <p className="text-xs text-slate-400 mt-1">Completaron</p>
+                      </div>
+                      <div className="w-px h-10 bg-slate-100"></div>
+                      <div className="text-center">
+                        <p className="text-xl font-semibold text-slate-400 leading-none">{pendingCount}</p>
+                        <p className="text-xs text-slate-400 mt-1">Faltan</p>
+                      </div>
+                      <div className="w-px h-10 bg-slate-100"></div>
+                      <div className="text-center min-w-[48px]">
+                        <p className="text-xl font-semibold text-[#1e3a8a] leading-none">{percent}%</p>
+                        <p className="text-xs text-slate-400 mt-1">Completado</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-4">
+                    <div className="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                      <div className="h-full rounded-full bg-emerald-500" style={{ width: `${percent}%` }}></div>
+                    </div>
+                    <button
+                      onClick={() => setActivityToView(activity)}
+                      className="text-xs text-[#1e3a8a] hover:underline font-medium whitespace-nowrap"
+                    >
+                      Ver progreso →
+                    </button>
+                  </div>
+                </div>
+              );
+            }) : (
+              <div className="text-center text-slate-500 p-8 bg-white border border-slate-200 rounded-xl">
+                <p>Este plan no tiene actividades aún.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+        {/* Drawer: añadir actividad */}
+        <Drawer isOpen={isAddOpen} onClose={closeAddDrawer} title="Añadir Actividad">
+          <div className="space-y-5">
+            <div>
+              <label htmlFor="newTitle" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+              <input
+                type="text"
+                id="newTitle"
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+                placeholder="Ej: Recopilar datos de ventas del T1"
+              />
+            </div>
+            <div>
+              <label htmlFor="newDescription" className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+              <textarea
+                id="newDescription"
+                value={newDescription}
+                onChange={e => setNewDescription(e.target.value)}
+                rows={4}
+                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+                placeholder="Describe los objetivos y detalles de la actividad..."
               />
             </div>
           </div>
-          <span className="text-emerald-600 font-semibold whitespace-nowrap">{overallProgress}%</span>
-        </div>
-      </div>
+          <div className="mt-8 flex justify-end gap-3 border-t pt-4">
+            <button onClick={closeAddDrawer} disabled={isAdding} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm disabled:opacity-70">Cancelar</button>
+            <button
+              onClick={handleAddActivity}
+              disabled={isAdding || !newTitle.trim() || !newDescription.trim()}
+              className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isAdding && <Spinner />}
+              {isAdding ? 'Añadiendo...' : 'Añadir'}
+            </button>
+          </div>
+        </Drawer>
 
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Actividades</h4>
-          <button
-            onClick={() => setIsAddOpen(true)}
-            className="inline-flex items-center gap-2 text-xs font-medium bg-[#1e3a8a] hover:bg-[#162d6e] text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            <PlusIcon className="w-4 h-4" />
-            Añadir actividad
-          </button>
-        </div>
-        <div className="space-y-4">
-          {activities.length > 0 ? activities.map(activity => {
-            const { completedCount, pendingCount, percent } = getActivityMetrics(activity);
-            const borderColor = getBorderColor(percent);
-
-            return (
-              <div key={activity.id} className={`bg-white border border-slate-200 rounded-xl overflow-hidden border-l-4 ${borderColor}`}>
-                <div className="flex items-start gap-6 px-6 py-5">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-1">
-                      <h3 className="text-sm font-semibold text-slate-800">{activity.title}</h3>
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">{activity.description}</p>
-                  </div>
-                  <div className="flex items-center gap-6 flex-shrink-0">
-                    <div className="text-center">
-                      <p className="text-xl font-semibold text-emerald-600 leading-none">{completedCount}</p>
-                      <p className="text-xs text-slate-400 mt-1">Completaron</p>
-                    </div>
-                    <div className="w-px h-10 bg-slate-100"></div>
-                    <div className="text-center">
-                      <p className="text-xl font-semibold text-slate-400 leading-none">{pendingCount}</p>
-                      <p className="text-xs text-slate-400 mt-1">Faltan</p>
-                    </div>
-                    <div className="w-px h-10 bg-slate-100"></div>
-                    <div className="text-center min-w-[48px]">
-                      <p className="text-xl font-semibold text-[#1e3a8a] leading-none">{percent}%</p>
-                      <p className="text-xs text-slate-400 mt-1">Completado</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-4">
-                  <div className="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                    <div className="h-full rounded-full bg-emerald-500" style={{ width: `${percent}%` }}></div>
-                  </div>
-                  <button
-                    onClick={() => setActivityToView(activity)}
-                    className="text-xs text-[#1e3a8a] hover:underline font-medium whitespace-nowrap"
-                  >
-                    Ver progreso →
-                  </button>
-                </div>
-              </div>
-            );
-          }) : (
-            <div className="text-center text-slate-500 p-8 bg-white border border-slate-200 rounded-xl">
-              <p>Este plan no tiene actividades aún.</p>
+        {/* Drawer: editar actividad */}
+        <Drawer isOpen={activityToEdit !== null} onClose={() => setActivityToEdit(null)} title="Editar Actividad">
+          <div className="space-y-5">
+            <div>
+              <label htmlFor="editTitle" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+              <input
+                type="text"
+                id="editTitle"
+                value={editTitle}
+                onChange={e => setEditTitle(e.target.value)}
+                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+              />
             </div>
-          )}
-        </div>
-      </div>
+            <div>
+              <label htmlFor="editDescription" className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+              <textarea
+                id="editDescription"
+                value={editDescription}
+                onChange={e => setEditDescription(e.target.value)}
+                rows={4}
+                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+              />
+            </div>
+          </div>
+          <div className="mt-8 flex justify-end gap-3 border-t pt-4">
+            <button onClick={() => setActivityToEdit(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">Cancelar</button>
+            <button
+              onClick={handleConfirmEditActivity}
+              disabled={isSavingEdit}
+              className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isSavingEdit && <Spinner />}
+              {isSavingEdit ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
+        </Drawer>
 
-      {/* Drawer: añadir actividad */}
-      <Drawer isOpen={isAddOpen} onClose={closeAddDrawer} title="Añadir Actividad">
-        <div className="space-y-5">
-          <div>
-            <label htmlFor="newTitle" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-            <input
-              type="text"
-              id="newTitle"
-              value={newTitle}
-              onChange={e => setNewTitle(e.target.value)}
-              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
-              placeholder="Ej: Recopilar datos de ventas del T1"
-            />
-          </div>
-          <div>
-            <label htmlFor="newDescription" className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-            <textarea
-              id="newDescription"
-              value={newDescription}
-              onChange={e => setNewDescription(e.target.value)}
-              rows={4}
-              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
-              placeholder="Describe los objetivos y detalles de la actividad..."
-            />
-          </div>
-        </div>
-        <div className="mt-8 flex justify-end gap-3 border-t pt-4">
-          <button onClick={closeAddDrawer} disabled={isAdding} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm disabled:opacity-70">Cancelar</button>
-          <button
-            onClick={handleAddActivity}
-            disabled={isAdding || !newTitle.trim() || !newDescription.trim()}
-            className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isAdding && <Spinner />}
-            {isAdding ? 'Añadiendo...' : 'Añadir'}
-          </button>
-        </div>
-      </Drawer>
-
-      {/* Drawer: editar actividad */}
-      <Drawer isOpen={activityToEdit !== null} onClose={() => setActivityToEdit(null)} title="Editar Actividad">
-        <div className="space-y-5">
-          <div>
-            <label htmlFor="editTitle" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-            <input
-              type="text"
-              id="editTitle"
-              value={editTitle}
-              onChange={e => setEditTitle(e.target.value)}
-              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
-            />
-          </div>
-          <div>
-            <label htmlFor="editDescription" className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-            <textarea
-              id="editDescription"
-              value={editDescription}
-              onChange={e => setEditDescription(e.target.value)}
-              rows={4}
-              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
-            />
-          </div>
-        </div>
-        <div className="mt-8 flex justify-end gap-3 border-t pt-4">
-          <button onClick={() => setActivityToEdit(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">Cancelar</button>
-          <button
-            onClick={handleConfirmEditActivity}
-            disabled={isSavingEdit}
-            className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isSavingEdit && <Spinner />}
-            {isSavingEdit ? 'Guardando...' : 'Guardar Cambios'}
-          </button>
-        </div>
-      </Drawer>
-
-      {/* Drawer: progreso de actividad */}
-      <Drawer
-        isOpen={activityToView !== null}
-        onClose={() => setActivityToView(null)}
-        title={`Progreso — ${activityToView?.title ?? ''}`}
-      >
-        {activityToView && activityToView.completions.length > 0 ? (
-          <div className="space-y-3">
-            {activityToView.completions.map(u => (
-              <div key={u.id} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
-                <div className="min-w-0">
-                  <p className="font-medium text-gray-800 text-sm">{u.name}</p>
-                  {u.completion?.observations && (
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">{u.completion.observations}</p>
+        {/* Drawer: progreso de actividad */}
+        <Drawer
+          isOpen={activityToView !== null}
+          onClose={() => setActivityToView(null)}
+          title={`Progreso — ${activityToView?.title ?? ''}`}
+        >
+          {activityToView && activityToView.completions.length > 0 ? (
+            <div className="space-y-3">
+              {activityToView.completions.map(u => (
+                <div key={u.id} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-800 text-sm">{u.name}</p>
+                    {u.completion?.observations && (
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">{u.completion.observations}</p>
+                    )}
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {u.completion?.createdAt && new Date(u.completion.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    </p>
+                  </div>
+                  {u.completion?.evidenceUrl && (
+                    <a
+                      href={u.completion.evidenceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-[#1e3a8a] font-medium hover:underline whitespace-nowrap"
+                    >
+                      Ver evidencia
+                    </a>
                   )}
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    {u.completion?.createdAt && new Date(u.completion.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
-                  </p>
                 </div>
-                {u.completion?.evidenceUrl && (
-                  <a
-                    href={u.completion.evidenceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-[#1e3a8a] font-medium hover:underline whitespace-nowrap"
-                  >
-                    Ver evidencia
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-400 py-10 text-sm">Ningún empleado ha completado esta actividad aún.</p>
-        )}
-      </Drawer>
+              ))}
+            </div>
+          ) : (
+            <p className="text-center text-gray-400 py-10 text-sm">Ningún empleado ha completado esta actividad aún.</p>
+          )}
+        </Drawer>
 
-      <ConfirmationModal
-        isOpen={activityToDelete !== null}
-        onClose={() => setActivityToDelete(null)}
-        onConfirm={handleConfirmDeleteActivity}
-        title="Confirmar Eliminación de Actividad"
-        confirmText="Eliminar"
-        isLoading={isDeleting}
-      >
-        <p>¿Estás seguro de que quieres eliminar <strong>"{activityToDelete?.title}"</strong>?</p>
-        <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>
-      </ConfirmationModal>
-    </div>
+        <ConfirmationModal
+          isOpen={activityToDelete !== null}
+          onClose={() => setActivityToDelete(null)}
+          onConfirm={handleConfirmDeleteActivity}
+          title="Confirmar Eliminación de Actividad"
+          confirmText="Eliminar"
+          isLoading={isDeleting}
+        >
+          <p>¿Estás seguro de que quieres eliminar <strong>"{activityToDelete?.title}"</strong>?</p>
+          <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>
+        </ConfirmationModal>       
+    </>
   );
 };
 
