@@ -1,12 +1,8 @@
-
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ReactTabulator, ColumnDefinition } from 'react-tabulator';
-import 'react-tabulator/lib/styles.css';
-import 'react-tabulator/lib/css/tabulator_bootstrap3.min.css';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plan, Activity, User } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import Drawer from './Drawer';
-import { ArrowLeftIcon, PlusIcon } from './Icons';
+import { ArrowLeftIcon, PlusIcon, CheckCircleIcon, ClockIcon, ExternalLinkIcon } from './Icons';
 import { useToast } from '../hooks/useToast';
 import { activityService } from '../services/ActivityService';
 import { userService, UserWithCompletion } from '../services/UserService';
@@ -20,166 +16,119 @@ interface PlanDetailProps {
 }
 
 const MONTH_NAMES: Record<number, string> = {
-  1: 'Enero',     2: 'Febrero',   3: 'Marzo',     4: 'Abril',
-  5: 'Mayo',      6: 'Junio',     7: 'Julio',      8: 'Agosto',
+  1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+  5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
   9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre',
 };
 
-const progressFormatter = (cell: any) => {
-  const val: number = cell.getValue();
-  const color = val < 40 ? '#ef4444' : val < 75 ? '#eab308' : '#22c55e';
-  return `
-    <div style="display:flex;flex-direction:column;gap:4px;min-width:80px">
-      <div style="background:#e5e7eb;border-radius:9999px;height:5px;overflow:hidden">
-        <div style="width:${val}%;background:${color};height:100%;border-radius:9999px;transition:width 0.3s"></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:0.7rem;color:#6b7280">${val}%</span>
-        <a
-          data-action="view"
-          style="font-size:0.7rem;color:#15803d;text-decoration:underline;cursor:pointer;white-space:nowrap"
-        >Ver progreso</a>
-      </div>
-    </div>
-  `;
-};
-
-const actionsFormatter = () => `
-  <div style="display:flex;gap:6px;justify-content:center">
-    <button
-      data-action="edit"
-      style="padding:4px 10px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;font-size:0.75rem;cursor:pointer"
-    >Editar</button>
-    <button
-      data-action="delete"
-      style="padding:4px 10px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;font-size:0.75rem;cursor:pointer"
-    >Eliminar</button>
-  </div>
-`;
-
-interface ActivityRow {
-  id: number;
-  plan_id: number;
-  titulo: string;
-  descripcion: string;
-  progreso: number;
+interface ActivityWithCompletions extends Activity {
+  completions: UserWithCompletion[];
+  loadingCompletions: boolean;
 }
 
 const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack }) => {
-  const [activeSection, setActiveSection] = useState<'activities' | 'employees'>('activities');
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activities, setActivities] = useState<ActivityWithCompletions[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
 
-  const [activityToView, setActivityToView] = useState<ActivityRow | null>(null);
-  const [activityToDelete, setActivityToDelete] = useState<ActivityRow | null>(null);
-  const [activityToEdit, setActivityToEdit] = useState<ActivityRow | null>(null);
+  const [activityToView, setActivityToView] = useState<ActivityWithCompletions | null>(null);
+  const [activityToDelete, setActivityToDelete] = useState<Activity | null>(null);
+  const [activityToEdit, setActivityToEdit] = useState<Activity | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [employeeToView, setEmployeeToView] = useState<User | null>(null);
-  const [activityCompletions, setActivityCompletions] = useState<UserWithCompletion[]>([]);
-  const [loadingCompletions, setLoadingCompletions] = useState(false);
-
-  const employeesRef = useRef(employees);
-  employeesRef.current = employees;
 
   const { addToast } = useToast();
-
-  useEffect(() => {
-    if (!activityToView) return;
-    let cancelled = false;
-    setLoadingCompletions(true);
-    setActivityCompletions([]);
-    userService.getUsersByActivity(activityToView.id)
-      .then(data => { if (!cancelled) setActivityCompletions(data); })
-      .catch(() => { if (!cancelled) addToast('Error al cargar el progreso de la actividad.', 'error'); })
-      .finally(() => { if (!cancelled) setLoadingCompletions(false); });
-    return () => { cancelled = true; };
-  }, [activityToView?.id]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     activityService.getActivities(plan.id)
-      .then(data => { if (!cancelled) setActivities(data); })
+      .then(async data => {
+        if (cancelled) return;
+        const activitiesWithCompletions = await Promise.all(
+          data.map(async (activity) => {
+            try {
+              const completions = await userService.getUsersByActivity(activity.id);
+              return { ...activity, completions, loadingCompletions: false };
+            } catch {
+              return { ...activity, completions: [], loadingCompletions: false };
+            }
+          })
+        );
+        setActivities(activitiesWithCompletions);
+      })
       .catch(() => { if (!cancelled) addToast('Error al cargar las actividades.', 'error'); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [plan.id]);
 
-  const tableData: ActivityRow[] = useMemo(() =>
-    activities.map(a => ({
-      id: a.id,
-      plan_id: a.plan_id,
-      titulo: a.title,
-      descripcion: a.description,
-      progreso: 0,
-    })),
-  [activities]);
+  const totalEmployees = employees.length || 1;
 
-  const handleCellClick = (_e: any, cell: any) => {
-    const target = _e.target as HTMLElement;
-    const action = target.dataset.action;
-    if (!action) return;
-    const row = cell.getData() as ActivityRow;
-    if (action === 'view') setActivityToView(row);
-    if (action === 'edit') {
-      setActivityToEdit(row);
-      setEditTitle(row.titulo);
-      setEditDescription(row.descripcion);
-    }
-    if (action === 'delete') setActivityToDelete(row);
+  const metrics = useMemo(() => {
+    let completed = 0;
+    let pending = 0;
+    let total = 0;
+    activities.forEach(a => {
+      const completedCount = a.completions.filter(c => c.completion?.evidenceUrl).length;
+      if (completedCount > 0) completed++;
+      else pending++;
+      total++;
+    });
+    return { completed, pending, total };
+  }, [activities]);
+
+  const overallProgress = useMemo(() => {
+    if (activities.length === 0) return 0;
+    let totalPercent = 0;
+    activities.forEach(a => {
+      const completedCount = a.completions.filter(c => c.completion?.evidenceUrl).length;
+      totalPercent += Math.round((completedCount / totalEmployees) * 100);
+    });
+    return Math.round(totalPercent / activities.length);
+  }, [activities, totalEmployees]);
+
+  const getActivityMetrics = (activity: ActivityWithCompletions) => {
+    const completedCount = activity.completions.filter(c => c.completion?.evidenceUrl).length;
+    const pendingCount = totalEmployees - completedCount;
+    const percent = Math.round((completedCount / totalEmployees) * 100);
+    return { completedCount, pendingCount, percent };
   };
 
-  const columns: ColumnDefinition[] = useMemo(() => [
-    { title: 'Título',      field: 'titulo',      widthGrow: 2, headerSort: true },
-    { title: 'Descripción', field: 'descripcion', widthGrow: 3, headerSort: true },
-    { title: 'Progreso',    field: 'progreso',    widthGrow: 2, headerSort: true, formatter: progressFormatter, cellClick: handleCellClick },
-    {
-      title: 'Acciones',
-      field: 'id',
-      widthGrow: 1,
-      hozAlign: 'center' as const,
-      headerSort: false,
-      formatter: actionsFormatter,
-      cellClick: handleCellClick,
-    },
-  ], []);
+  const getCompletitudLevel = (percent: number) => {
+    if (percent >= 70) return { level: 'Alta completitud', color: 'emerald' };
+    if (percent >= 30) return { level: 'En progreso', color: 'blue' };
+    return { level: 'Baja completitud', color: 'red' };
+  };
 
-  const employeeTableData = useMemo(() =>
-    employees.map(employee => ({
-      employeeId: employee.id,
-      nombre: employee.name,
-      tareas: `0/${activities.length}`,
-      progreso: 0,
-    })),
-  [employees, activities]);
+  const getBorderColor = (percent: number) => {
+    if (percent >= 70) return 'border-emerald-400';
+    if (percent >= 30) return 'border-amber-400';
+    return 'border-red-400';
+  };
 
-  const employeeColumns: ColumnDefinition[] = useMemo(() => [
-    { title: 'Nombre',   field: 'nombre',  widthGrow: 2, headerSort: true },
-    { title: 'Tareas',   field: 'tareas',  width: 90, hozAlign: 'center' as const, headerSort: false },
-    {
-      title: 'Progreso', field: 'progreso', widthGrow: 2, headerSort: true, formatter: progressFormatter,
-      cellClick: (_e: any, cell: any) => {
-        const target = _e.target as HTMLElement;
-        if (target.dataset.action !== 'view') return;
-        const { employeeId } = cell.getData();
-        const employee = employeesRef.current.find(w => w.id === employeeId);
-        if (employee) setEmployeeToView(employee);
-      },
-    },
-  ], []);
+  const getBadgeStyles = (color: string) => {
+    if (color === 'emerald') return 'bg-emerald-50 text-emerald-600';
+    if (color === 'blue') return 'bg-blue-50 text-blue-600';
+    return 'bg-red-50 text-red-500';
+  };
 
-  const tabClass = (section: 'activities' | 'employees') =>
-    activeSection === section
-      ? 'border-primary text-primary whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm'
-      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm';
+  const getProgressBarColor = (percent: number) => {
+    if (percent >= 70) return 'bg-emerald-500';
+    if (percent >= 30) return 'bg-blue-500';
+    return 'bg-red-500';
+  };
+
+  const getPendingColor = (pending: number) => {
+    if (pending === 0) return 'text-slate-400';
+    if (pending < totalEmployees / 2) return 'text-amber-500';
+    return 'text-red-500';
+  };
 
   const handleAddActivity = async () => {
     if (!newTitle.trim() || !newDescription.trim()) {
@@ -193,7 +142,12 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
         title: newTitle.trim(),
         description: newDescription.trim(),
       });
-      setActivities(prev => [...prev, created]);
+      const newActivity: ActivityWithCompletions = {
+        ...created,
+        completions: [],
+        loadingCompletions: false,
+      };
+      setActivities(prev => [...prev, newActivity]);
       addToast('Actividad añadida con éxito.', 'success');
       closeAddDrawer();
     } catch {
@@ -215,7 +169,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
         title: editTitle.trim(),
         description: editDescription.trim(),
       });
-      setActivities(prev => prev.map(a => a.id === updated.id ? updated : a));
+      setActivities(prev => prev.map(a => a.id === updated.id ? { ...a, ...updated } : a));
       addToast('Actividad actualizada con éxito.', 'success');
       setActivityToEdit(null);
     } catch {
@@ -246,108 +200,183 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
     setNewDescription('');
   };
 
-  const [year, month, day] = plan.expiration_date.split('-').map(Number);
-  const deadlineStr = new Date(year, month - 1, day).toLocaleDateString('es-ES');
+  const [, month, day] = plan.expiration_date.split('-').map(Number);
+  const deadlineStr = new Date(new Date().getFullYear(), month - 1, day).toLocaleDateString('es-ES');
+
+  if (loading) {
+    return (
+      <div className="flex justify-center p-8 bg-white rounded-xl shadow">
+        <Spinner className="h-6 w-6 text-[#1e3a8a]" />
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div className="space-y-4">
-        <div>
-          <button onClick={onBack} className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline mb-4">
-            <ArrowLeftIcon className="w-5 h-5" />
-            Volver al Panel
-          </button>
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h1 className="text-3xl font-bold text-primary">{plan.title}</h1>
-            <p className="text-dark-gray mt-1">
-              {MONTH_NAMES[plan.month] ?? plan.month} | Fecha Límite: {deadlineStr}
+    <div className="space-y-6 font-['DM_Sans']">
+      <button onClick={onBack} className="flex items-center gap-2 text-sm font-semibold text-[#1e3a8a] hover:underline mb-4">
+        <ArrowLeftIcon className="w-5 h-5" />
+        Volver al Panel
+      </button>
+
+      <div className="bg-white border border-slate-200 rounded-xl p-7">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          <div>
+            <h3 className="text-2xl font-semibold text-[#1e3a8a]">{plan.title}</h3>
+            <p className="text-slate-500 mt-1">
+              {MONTH_NAMES[plan.month] || `Mes ${plan.month}`} • Fecha límite: {deadlineStr} • {totalEmployees} empleado{totalEmployees !== 1 ? 's' : ''}
             </p>
           </div>
-        </div>
-
-        <div className="border-b border-gray-200">
-          <nav className="-mb-px flex space-x-6">
-            <button className={tabClass('activities')} onClick={() => setActiveSection('activities')}>Actividades</button>
-            <button className={tabClass('employees')} onClick={() => setActiveSection('employees')}>Empleados</button>
-          </nav>
-        </div>
-
-        {activeSection === 'activities' && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b flex justify-between items-center flex-wrap gap-3">
-              <h2 className="text-2xl font-bold text-dark-gray">Actividades</h2>
-              <button
-                onClick={() => setIsAddOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-primary text-white font-semibold rounded-lg shadow-md hover:bg-primary-dark transition-colors"
-              >
-                <PlusIcon className="w-5 h-5" />
-                Añadir Actividad
-              </button>
+          <div className="flex flex-wrap gap-3">
+            <div className="bg-emerald-50 rounded-lg px-4 py-2 min-w-[100px] text-center">
+              <div className="text-2xl font-bold text-emerald-600">{metrics.completed}</div>
+              <div className="text-xs text-emerald-600">Completas</div>
             </div>
-            <div className="p-4">
-              {loading ? (
-                <div className="flex justify-center py-8"><Spinner className="h-6 w-6 text-primary" /></div>
-              ) : (
-                <ReactTabulator
-                  data={tableData}
-                  columns={columns}
-                  layout="fitColumns"
-                  options={{ movableColumns: true }}
-                />
-              )}
+            <div className="bg-amber-50 rounded-lg px-4 py-2 min-w-[100px] text-center">
+              <div className="text-2xl font-bold text-amber-500">{metrics.pending}</div>
+              <div className="text-xs text-amber-500">Pendientes</div>
+            </div>
+            <div className="bg-slate-100 rounded-lg px-4 py-2 min-w-[100px] text-center">
+              <div className="text-2xl font-bold text-slate-500">{metrics.total}</div>
+              <div className="text-xs text-slate-500">Total</div>
             </div>
           </div>
-        )}
+        </div>
+      </div>
 
-        {activeSection === 'employees' && (
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b">
-              <h2 className="text-2xl font-bold text-dark-gray">Empleados</h2>
-            </div>
-            <div className="p-4">
-              {employeeTableData.length ? (
-                <ReactTabulator
-                  data={employeeTableData}
-                  columns={employeeColumns}
-                  layout="fitColumns"
-                  options={{ movableColumns: false }}
-                />
-              ) : (
-                <p className="text-center text-gray-400 py-8 text-sm">No hay empleados asignados a este plan.</p>
-              )}
+      <div className="bg-white border border-slate-200 rounded-xl px-7 py-4">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-slate-600 font-medium whitespace-nowrap">Progreso general</span>
+          <div className="flex-1 mx-4">
+            <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                style={{ width: `${overallProgress}%` }}
+              />
             </div>
           </div>
-        )}
+          <span className="text-emerald-600 font-semibold whitespace-nowrap">{overallProgress}%</span>
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Actividades</h4>
+          <button
+            onClick={() => setIsAddOpen(true)}
+            className="inline-flex items-center gap-2 text-xs font-medium bg-[#1e3a8a] hover:bg-[#162d6e] text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            <PlusIcon className="w-4 h-4" />
+            Añadir actividad
+          </button>
+        </div>
+        <div className="space-y-4">
+          {activities.length > 0 ? activities.map(activity => {
+            const { completedCount, pendingCount, percent } = getActivityMetrics(activity);
+            const level = getCompletitudLevel(percent);
+            const borderColor = getBorderColor(percent);
+            const badgeStyles = getBadgeStyles(level.color);
+            const progressColor = getProgressBarColor(percent);
+            const pendingColor = getPendingColor(pendingCount);
+
+            return (
+              <div key={activity.id} className={`bg-white border border-slate-200 rounded-xl overflow-hidden border-l-4 ${borderColor}`}>
+                <div className="flex items-start gap-6 px-6 py-5">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                      <h3 className="text-sm font-semibold text-slate-800">{activity.title}</h3>
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full ${badgeStyles}`}>
+                        {level.color === 'emerald' && (
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                        )}
+                        {level.color === 'blue' && (
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 6v6l4 2" />
+                          </svg>
+                        )}
+                        {level.color === 'red' && (
+                          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M15 9l-6 6M9 9l6 6" />
+                          </svg>
+                        )}
+                        {level.level}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">{activity.description}</p>
+                  </div>
+                  <div className="flex items-center gap-6 flex-shrink-0">
+                    <div className="text-center">
+                      <p className="text-xl font-semibold text-emerald-600 leading-none">{completedCount}</p>
+                      <p className="text-xs text-slate-400 mt-1">Completaron</p>
+                    </div>
+                    <div className="w-px h-10 bg-slate-100"></div>
+                    <div className="text-center">
+                      <p className={`text-xl font-semibold leading-none ${pendingColor}`}>{pendingCount}</p>
+                      <p className="text-xs text-slate-400 mt-1">Faltan</p>
+                    </div>
+                    <div className="w-px h-10 bg-slate-100"></div>
+                    <div className="text-center min-w-[48px]">
+                      <p className="text-xl font-semibold text-[#1e3a8a] leading-none">{percent}%</p>
+                      <p className="text-xs text-slate-400 mt-1">Completado</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-4">
+                  <div className="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                    <div className={`h-full rounded-full ${progressColor}`} style={{ width: `${percent}%` }}></div>
+                  </div>
+                  <button
+                    onClick={() => setActivityToView(activity)}
+                    className="text-xs text-[#1e3a8a] hover:underline font-medium whitespace-nowrap"
+                  >
+                    Ver progreso →
+                  </button>
+                </div>
+              </div>
+            );
+          }) : (
+            <div className="text-center text-slate-500 p-8 bg-white border border-slate-200 rounded-xl">
+              <p>Este plan no tiene actividades aún.</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Drawer: añadir actividad */}
       <Drawer isOpen={isAddOpen} onClose={closeAddDrawer} title="Añadir Actividad">
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Título</label>
+            <label htmlFor="newTitle" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
             <input
               type="text"
+              id="newTitle"
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-primary focus:border-primary"
+              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+              placeholder="Ej: Recopilar datos de ventas del T1"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Descripción</label>
+            <label htmlFor="newDescription" className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
             <textarea
+              id="newDescription"
               value={newDescription}
               onChange={e => setNewDescription(e.target.value)}
-              rows={3}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-primary focus:border-primary"
+              rows={4}
+              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+              placeholder="Describe los objetivos y detalles de la actividad..."
             />
           </div>
         </div>
         <div className="mt-8 flex justify-end gap-3 border-t pt-4">
-          <button onClick={closeAddDrawer} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">Cancelar</button>
+          <button onClick={closeAddDrawer} disabled={isAdding} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm disabled:opacity-70">Cancelar</button>
           <button
             onClick={handleAddActivity}
-            disabled={isAdding}
-            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+            disabled={isAdding || !newTitle.trim() || !newDescription.trim()}
+            className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isAdding && <Spinner />}
             {isAdding ? 'Añadiendo...' : 'Añadir'}
@@ -357,23 +386,25 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
 
       {/* Drawer: editar actividad */}
       <Drawer isOpen={activityToEdit !== null} onClose={() => setActivityToEdit(null)} title="Editar Actividad">
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Título</label>
+            <label htmlFor="editTitle" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
             <input
               type="text"
+              id="editTitle"
               value={editTitle}
               onChange={e => setEditTitle(e.target.value)}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-primary focus:border-primary"
+              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Descripción</label>
+            <label htmlFor="editDescription" className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
             <textarea
+              id="editDescription"
               value={editDescription}
               onChange={e => setEditDescription(e.target.value)}
-              rows={3}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-primary focus:border-primary"
+              rows={4}
+              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
             />
           </div>
         </div>
@@ -382,7 +413,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
           <button
             onClick={handleConfirmEditActivity}
             disabled={isSavingEdit}
-            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+            className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isSavingEdit && <Spinner />}
             {isSavingEdit ? 'Guardando...' : 'Guardar Cambios'}
@@ -394,29 +425,27 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
       <Drawer
         isOpen={activityToView !== null}
         onClose={() => setActivityToView(null)}
-        title={`Progreso — ${activityToView?.titulo ?? ''}`}
+        title={`Progreso — ${activityToView?.title ?? ''}`}
       >
-        {loadingCompletions ? (
-          <div className="flex justify-center py-10"><Spinner className="h-6 w-6 text-primary" /></div>
-        ) : activityCompletions.length ? (
+        {activityToView && activityToView.completions.length > 0 ? (
           <div className="space-y-3">
-            {activityCompletions.map(u => (
+            {activityToView.completions.map(u => (
               <div key={u.id} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
                 <div className="min-w-0">
                   <p className="font-medium text-gray-800 text-sm">{u.name}</p>
-                  {u.completion.observations && (
+                  {u.completion?.observations && (
                     <p className="text-xs text-gray-500 mt-0.5 truncate">{u.completion.observations}</p>
                   )}
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {new Date(u.completion.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
+                    {u.completion?.createdAt && new Date(u.completion.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
                   </p>
                 </div>
-                {u.completion.evidenceUrl && (
+                {u.completion?.evidenceUrl && (
                   <a
                     href={u.completion.evidenceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-primary font-medium hover:underline whitespace-nowrap"
+                    className="text-xs text-[#1e3a8a] font-medium hover:underline whitespace-nowrap"
                   >
                     Ver evidencia
                   </a>
@@ -429,43 +458,6 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
         )}
       </Drawer>
 
-      {/* Drawer: actividades completadas por empleado */}
-      <Drawer
-        isOpen={employeeToView !== null}
-        onClose={() => setEmployeeToView(null)}
-        title={employeeToView?.name ?? ''}
-      >
-        {employeeToView && (
-          <>
-            <p className="text-xs text-gray-400 mb-4">{plan.title}</p>
-            {activities.length ? (
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    <th className="px-3 py-2 border-b">Actividad</th>
-                    <th className="px-3 py-2 border-b">Descripción</th>
-                    <th className="px-3 py-2 border-b text-center">Estado</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {activities.map(act => (
-                    <tr key={act.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-2.5 text-gray-800">{act.title}</td>
-                      <td className="px-3 py-2.5 text-gray-500 text-xs">{act.description}</td>
-                      <td className="px-3 py-2.5 text-center">
-                        <span className="text-xs text-yellow-600 bg-yellow-50 border border-yellow-200 rounded-full px-2 py-0.5">Pendiente</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p className="text-center text-gray-400 py-8 text-sm">Este plan no tiene actividades aún.</p>
-            )}
-          </>
-        )}
-      </Drawer>
-
       <ConfirmationModal
         isOpen={activityToDelete !== null}
         onClose={() => setActivityToDelete(null)}
@@ -474,10 +466,10 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
         confirmText="Eliminar"
         isLoading={isDeleting}
       >
-        <p>¿Estás seguro de que quieres eliminar <strong>"{activityToDelete?.titulo}"</strong>?</p>
+        <p>¿Estás seguro de que quieres eliminar <strong>"{activityToDelete?.title}"</strong>?</p>
         <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>
       </ConfirmationModal>
-    </>
+    </div>
   );
 };
 
