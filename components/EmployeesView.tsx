@@ -3,6 +3,7 @@ import { User, Role, Plan } from '../types';
 import { userService, UserActivity } from '../services/UserService';
 import { planService } from '../services/PlanService';
 import Spinner from './shared/Spinner';
+import { getBgColor, getTextColor } from '@/utils/progressColor';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -271,25 +272,13 @@ const EmployeesView: React.FC = () => {
                   </div>
                   <div className="text-center bg-amber-50 rounded-lg px-4 py-2 min-w-[56px]">
                     <p className="text-lg font-semibold text-amber-500 leading-none">{selTotal - selDone}</p>
-                    <p className="text-xs text-amber-400 mt-0.5">Faltan</p>
+                    <p className="text-xs text-amber-500 mt-0.5">Faltan</p>
                   </div>
-                  <div className="text-center bg-slate-100 rounded-lg px-4 py-2 min-w-[56px]">
+                  <div className={`${getBgColor(selPct)} rounded-lg px-4 py-2 min-w-[56px] text-center`}>
                     <p className={`text-lg font-semibold leading-none ${pctText(selPct)}`}>{selPct}%</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Cumplimiento</p>
+                    <p className={`text-xs ${getTextColor(selPct)} mt-0.5`}>Cumplimiento</p>
                   </div>
                 </div>
-              </div>
-
-              {/* General progress bar */}
-              <div className="bg-white border border-slate-200 rounded-xl px-6 py-3.5 flex items-center gap-4">
-                <span className="text-sm text-slate-500 whitespace-nowrap">Progreso general</span>
-                <div className="flex-1 bg-slate-100 rounded-full h-2 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${barColor(selPct)}`}
-                    style={{ width: `${selPct}%`, transition: 'width 0.5s cubic-bezier(.4,0,.2,1)' }}
-                  />
-                </div>
-                <span className={`text-sm font-semibold whitespace-nowrap ${pctText(selPct)}`}>{selPct}%</span>
               </div>
 
               {/* Activities */}

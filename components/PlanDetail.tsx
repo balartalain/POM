@@ -7,7 +7,7 @@ import { useToast } from '../hooks/useToast';
 import { activityService } from '../services/ActivityService';
 import { userService, UserWithCompletion } from '../services/UserService';
 import Spinner from './shared/Spinner';
-import { getProgressBarColor, getBorderColor } from '../utils/progressColor';
+import { getProgressBarColor, getBorderColor, getTextColor, getBgColor } from '../utils/progressColor';
 
 interface PlanDetailProps {
   plan: Plan;
@@ -220,9 +220,9 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
                 <div className="text-2xl font-bold text-amber-500">{metrics.pending}</div>
                 <div className="text-xs text-amber-500">Pendientes</div>
               </div>
-              <div className="bg-slate-100 rounded-lg px-4 py-2 min-w-[100px] text-center">
-                <div className="text-2xl font-bold text-slate-500">{overallProgress}%</div>
-                <div className="text-xs text-slate-500">Cumplimiento</div>
+              <div className={`${getBgColor(overallProgress)} rounded-lg px-4 py-2 min-w-[100px] text-center`}>
+                <div className={`text-2xl font-bold ${getTextColor(overallProgress)}`}>{overallProgress}%</div>
+                <div className={`text-xs ${getTextColor(overallProgress)}`}>Cumplimiento</div>
               </div>              
             </div>
           </div>
