@@ -65,8 +65,11 @@ const ExternalIcon = () => (
 
 // ── component ─────────────────────────────────────────────────────────────────
 
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: 4 }, (_, i) => CURRENT_YEAR - i);
+
 const EmployeesView: React.FC = () => {
-  const year = new Date().getFullYear();
+  const [year, setYear] = useState(CURRENT_YEAR);
 
   const [employees, setEmployees]           = useState<User[]>([]);
   const [plans, setPlans]                   = useState<Plan[]>([]);
@@ -138,17 +141,29 @@ const EmployeesView: React.FC = () => {
       {/* Page subheader */}
       <div className="px-8 py-4 bg-white border-b border-slate-200 flex items-center justify-between flex-shrink-0">
         <h1 className="text-lg font-semibold text-slate-800">Empleados</h1>
-        <div className="flex items-center gap-2">
-          <label className="text-sm text-slate-500 whitespace-nowrap">Plan:</label>
-          <select
-            className="text-sm border border-slate-200 bg-white rounded-lg px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-900/20"
-            value={selectedPlanId ?? ''}
-            onChange={e => setSelectedPlanId(Number(e.target.value))}
-          >
-            {plans.map(p => (
-              <option key={p.id} value={p.id}>{p.title}</option>
-            ))}
-          </select>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-slate-500 whitespace-nowrap">Año:</label>
+            <select
+              className="text-sm border border-slate-200 bg-white rounded-lg px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-900/20"
+              value={year}
+              onChange={e => { setYear(Number(e.target.value)); setSelectedPlanId(null); setSelectedEmpId(null); setSelActs([]); }}
+            >
+              {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-slate-500 whitespace-nowrap">Plan:</label>
+            <select
+              className="text-sm border border-slate-200 bg-white rounded-lg px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-900/20"
+              value={selectedPlanId ?? ''}
+              onChange={e => setSelectedPlanId(Number(e.target.value))}
+            >
+              {plans.map(p => (
+                <option key={p.id} value={p.id}>{p.title}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
