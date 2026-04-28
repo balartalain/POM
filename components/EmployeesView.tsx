@@ -68,14 +68,14 @@ const ExternalIcon = () => (
 const EmployeesView: React.FC = () => {
   const year = new Date().getFullYear();
 
-  const [employees, setEmployees]             = useState<User[]>([]);
-  const [plans, setPlans]                     = useState<Plan[]>([]);
-  const [selectedPlanId, setSelectedPlanId]   = useState<number | null>(null);
-  const [selectedEmpId, setSelectedEmpId]     = useState<number | null>(null);
-  const [allActivities, setAllActivities]     = useState<Record<number, UserActivity[]>>({});
-  const [loadingInit, setLoadingInit]         = useState(true);
+  const [employees, setEmployees]           = useState<User[]>([]);
+  const [plans, setPlans]                   = useState<Plan[]>([]);
+  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
+  const [selectedEmpId, setSelectedEmpId]   = useState<number | null>(null);
+  const [selActs, setSelActs]               = useState<UserActivity[]>([]);
+  const [loadingInit, setLoadingInit]       = useState(true);
   const [loadingActivities, setLoadingActivities] = useState(false);
-  const [search, setSearch]                   = useState('');
+  const [search, setSearch]                 = useState('');
 
   // Load employees + plans
   useEffect(() => {
@@ -95,25 +95,17 @@ const EmployeesView: React.FC = () => {
     return () => { cancelled = true; };
   }, [year]);
 
-  // Load activities for all employees once employee list is ready
+  // Load activities for the selected employee + plan on demand
   useEffect(() => {
-    if (employees.length === 0) return;
+    if (!selectedEmpId || !selectedPlanId) return;
     let cancelled = false;
     setLoadingActivities(true);
-    Promise.all(
-      employees.map(emp =>
-        userService.getUserActivities(emp.id, year)
-          .then(acts => ({ id: emp.id, acts }))
-          .catch(() => ({ id: emp.id, acts: [] as UserActivity[] }))
-      )
-    ).then(results => {
-      if (cancelled) return;
-      const map: Record<number, UserActivity[]> = {};
-      results.forEach(r => { map[r.id] = r.acts; });
-      setAllActivities(map);
-    }).finally(() => { if (!cancelled) setLoadingActivities(false); });
+    userService.getUserActivities(selectedEmpId, year)
+      .then(acts => { if (!cancelled) setSelActs(acts.filter(a => a.planId === selectedPlanId)); })
+      .catch(() => { if (!cancelled) setSelActs([]); })
+      .finally(() => { if (!cancelled) setLoadingActivities(false); });
     return () => { cancelled = true; };
-  }, [employees, year]);
+  }, [selectedEmpId, selectedPlanId, year]);
 
   // Derived state
   const selectedPlan     = useMemo(() => plans.find(p => p.id === selectedPlanId) ?? null, [plans, selectedPlanId]);
@@ -126,15 +118,6 @@ const EmployeesView: React.FC = () => {
     [employees, search]
   );
 
-  const getPlanActs = (empId: number): UserActivity[] =>
-    selectedPlanId ? (allActivities[empId] ?? []).filter(a => a.planId === selectedPlanId) : [];
-
-  const getPct = (empId: number) => {
-    const acts = getPlanActs(empId);
-    return acts.length === 0 ? 0 : Math.round((acts.filter(a => a.completed).length / acts.length) * 100);
-  };
-
-  const selActs  = selectedEmpId ? getPlanActs(selectedEmpId) : [];
   const selDone  = selActs.filter(a => a.completed).length;
   const selTotal = selActs.length;
   const selPct   = selTotal === 0 ? 0 : Math.round((selDone / selTotal) * 100);
@@ -192,11 +175,10 @@ const EmployeesView: React.FC = () => {
           {/* List */}
           <div className="overflow-y-auto flex-1">
             {filteredEmployees.map(emp => {
-              const pct      = getPct(emp.id);
-              const acts     = getPlanActs(emp.id);
-              const done     = acts.filter(a => a.completed).length;
-              const total    = acts.length;
               const selected = emp.id === selectedEmpId;
+              const pct      = selected ? selPct : 0;
+              const done     = selected ? selDone : 0;
+              const total    = selected ? selTotal : 0;
 
               return (
                 <div
@@ -205,7 +187,7 @@ const EmployeesView: React.FC = () => {
                   className={`emp-row px-4 py-3.5 border-b border-slate-100 cursor-pointer transition-colors ${selected ? 'selected' : 'hover:bg-slate-50'}`}
                 >
                   <div className="flex items-center gap-3 mb-2.5">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(pct)}`}>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${selected ? getAvatarColor(pct) : 'bg-slate-100 text-slate-500'}`}>
                       {getInitials(emp.name || emp.username)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -214,17 +196,21 @@ const EmployeesView: React.FC = () => {
                       </p>
                       <p className="text-xs text-slate-400 truncate">{emp.username}</p>
                     </div>
-                    <span className={`text-xs font-bold flex-shrink-0 ${getTextColor(pct)}`}>{pct}%</span>
+                    {selected && (
+                      <span className={`text-xs font-bold flex-shrink-0 ${getTextColor(pct)}`}>{pct}%</span>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className={`progress-bar h-full rounded-full ${getProgressBarColor(pct)}`}
-                        style={{ width: `${pct}%` }}
-                      />
+                  {selected && (
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`progress-bar h-full rounded-full ${getProgressBarColor(pct)}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-slate-400 whitespace-nowrap">{done}/{total}</span>
                     </div>
-                    <span className="text-xs text-slate-400 whitespace-nowrap">{done}/{total}</span>
-                  </div>
+                  )}
                 </div>
               );
             })}
