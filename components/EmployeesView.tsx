@@ -3,36 +3,24 @@ import { User, Role, Plan } from '../types';
 import { userService, UserActivity } from '../services/UserService';
 import { planService } from '../services/PlanService';
 import Spinner from './shared/Spinner';
-import { getBgColor, getTextColor } from '@/utils/progressColor';
+import { getBgColor, getTextColor, getProgressBarColor, getAvatarColor } from '@/utils/progressColor';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
                    'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
-const getInitials = (name: string) =>
-  name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase();
-
-const barColor = (pct: number) => {
-  if (pct === 100) return 'bg-emerald-500';
-  if (pct >= 50)   return 'bg-blue-400';
-  if (pct > 0)     return 'bg-amber-400';
-  return 'bg-red-400';
+const getInitials = (name: string) => {
+  const connectors = ['de', 'del', 'la', 'las', 'los', 'y'];
+  return name
+    .split(' ')
+    .filter(w => Boolean(w) && !connectors.includes(w.toLowerCase()))
+    .slice(0, 2)
+    .map(w => w[0])
+    .join('')
+    .toUpperCase();
 };
 
-const pctText = (pct: number) => {
-  if (pct === 100) return 'text-emerald-600';
-  if (pct >= 50)   return 'text-blue-500';
-  if (pct > 0)     return 'text-amber-500';
-  return 'text-red-500';
-};
-
-const avatarCls = (pct: number) => {
-  if (pct === 100) return 'bg-emerald-100 text-emerald-700';
-  if (pct >= 50)   return 'bg-blue-100 text-blue-700';
-  if (pct > 0)     return 'bg-amber-100 text-amber-700';
-  return 'bg-slate-100 text-slate-500';
-};
 
 const planLabel = (plan: Plan) => {
   const m = MONTHS_ES[(plan.month ?? 1) - 1] ?? '';
@@ -214,26 +202,25 @@ const EmployeesView: React.FC = () => {
                 <div
                   key={emp.id}
                   onClick={() => setSelectedEmpId(emp.id)}
-                  className={`px-4 py-3.5 border-b border-slate-100 cursor-pointer transition-colors ${selected ? 'bg-blue-50' : 'hover:bg-slate-100'}`}
-                  style={{ borderLeft: `3px solid ${selected ? '#1e3a8a' : 'transparent'}` }}
+                  className={`emp-row px-4 py-3.5 border-b border-slate-100 cursor-pointer transition-colors ${selected ? 'selected' : 'hover:bg-slate-50'}`}
                 >
                   <div className="flex items-center gap-3 mb-2.5">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${avatarCls(pct)}`}>
-                      {getInitials(emp.name)}
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(pct)}`}>
+                      {getInitials(emp.name || emp.username)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium truncate ${selected ? 'text-[#1e3a8a]' : 'text-slate-800'}`}>
+                      <p className={`text-sm font-medium emp-name truncate ${selected ? 'text-[#1e3a8a]' : 'text-slate-800'}`}>
                         {emp.name}
                       </p>
                       <p className="text-xs text-slate-400 truncate">{emp.username}</p>
                     </div>
-                    <span className={`text-xs font-bold flex-shrink-0 ${pctText(pct)}`}>{pct}%</span>
+                    <span className={`text-xs font-bold flex-shrink-0 ${getTextColor(pct)}`}>{pct}%</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
                       <div
-                        className={`h-full rounded-full ${barColor(pct)}`}
-                        style={{ width: `${pct}%`, transition: 'width 0.5s cubic-bezier(.4,0,.2,1)' }}
+                        className={`progress-bar h-full rounded-full ${getProgressBarColor(pct)}`}
+                        style={{ width: `${pct}%` }}
                       />
                     </div>
                     <span className="text-xs text-slate-400 whitespace-nowrap">{done}/{total}</span>
@@ -255,7 +242,7 @@ const EmployeesView: React.FC = () => {
               {/* Employee header card */}
               <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
-                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${avatarCls(selPct)}`}>
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${getAvatarColor(selPct)}`}>
                     {getInitials(selectedEmployee.name)}
                   </div>
                   <div>
@@ -275,7 +262,7 @@ const EmployeesView: React.FC = () => {
                     <p className="text-xs text-amber-500 mt-0.5">Faltan</p>
                   </div>
                   <div className={`${getBgColor(selPct)} rounded-lg px-4 py-2 min-w-[56px] text-center`}>
-                    <p className={`text-lg font-semibold leading-none ${pctText(selPct)}`}>{selPct}%</p>
+                    <p className={`text-lg font-semibold leading-none ${getTextColor(selPct)}`}>{selPct}%</p>
                     <p className={`text-xs ${getTextColor(selPct)} mt-0.5`}>Cumplimiento</p>
                   </div>
                 </div>

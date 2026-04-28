@@ -19,3 +19,9 @@ export const getBgColor = (percent: number) => {
   if (percent >= 30) return 'bg-amber-50';
   return 'bg-red-50';
 };
+
+export const getAvatarColor = (percent: number) => {
+  if (percent >= 70) return 'bg-emerald-100 text-emerald-700';
+  if (percent >= 30) return 'bg-amber-100 text-amber-700';
+  return 'bg-slate-100 text-slate-500';
+};
