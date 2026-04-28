@@ -89,7 +89,7 @@ const EmployeesView: React.FC = () => {
     planService.getPlans(year)
       .then(fetchedPlans => {
         if (cancelled) return;
-        const ps = fetchedPlans.slice(0, 3);
+        const ps = [...fetchedPlans].sort((a, b) => b.month - a.month);
         setPlans(ps);
         setSelectedPlanId(ps.length > 0 ? ps[0].id : null);
       })
@@ -182,8 +182,12 @@ const EmployeesView: React.FC = () => {
               value={selectedPlanId ?? ''}
               onChange={e => setSelectedPlanId(Number(e.target.value))}
             >
-              {plans.map(p => (
-                <option key={p.id} value={p.id}>{p.title}</option>
+              {Array.from(new Set(plans.map(p => p.month))).map(month => (
+                <optgroup key={month} label={MONTHS_ES[month - 1]}>
+                  {plans.filter(p => p.month === month).map(p => (
+                    <option key={p.id} value={p.id}>{p.title}</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>
@@ -295,7 +299,7 @@ const EmployeesView: React.FC = () => {
               {/* Activities */}
               <div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                  Actividades del plan
+                  Actividades
                 </p>
                 {loadingActivities ? (
                   <div className="flex justify-center py-6">
@@ -308,11 +312,8 @@ const EmployeesView: React.FC = () => {
                 ) : (
                   <div className="flex flex-col gap-2">
                     {selActs.map(act => (
-                      <div key={act.id} className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                        <div
-                          className="flex items-center gap-4 px-5 py-4"
-                          style={{ borderLeft: `4px solid ${act.completed ? '#34d399' : '#e2e8f0'}` }}
-                        >
+                      <div key={act.id} className={`bg-white border border-slate-200 rounded-xl overflow-hidden flex items-center gap-4 px-5 py-4 border-l-4 ${act.completed ? 'border-l-emerald-400' : 'border-l-slate-200'}`}>
+
                           <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${act.completed ? 'bg-emerald-100' : 'bg-slate-100'}`}>
                             {act.completed ? <CheckIcon /> : <ClockIcon />}
                           </div>
@@ -352,8 +353,7 @@ const EmployeesView: React.FC = () => {
                               Pendiente
                             </span>
                           )}
-                        </div>
-                      </div>
+                        </div>           
                     ))}
                   </div>
                 )}
