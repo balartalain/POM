@@ -7,6 +7,7 @@ import { useToast } from '../hooks/useToast';
 import { activityService } from '../services/ActivityService';
 import { userService, UserWithCompletion } from '../services/UserService';
 import Spinner from './shared/Spinner';
+import { getProgressBarColor, getBorderColor } from '../utils/progressColor';
 
 interface PlanDetailProps {
   plan: Plan;
@@ -107,35 +108,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
     return { completedCount, pendingCount, percent };
   };
 
-  const getCompletitudLevel = (percent: number) => {
-    if (percent >= 70) return { level: 'Alta completitud', color: 'emerald' };
-    if (percent >= 30) return { level: 'En progreso', color: 'blue' };
-    return { level: 'Baja completitud', color: 'red' };
-  };
 
-  const getBorderColor = (percent: number) => {
-    if (percent >= 70) return 'border-l-emerald-400';
-    if (percent >= 30) return 'border-l-amber-400';
-    return 'border-l-red-400';
-  };
-
-  const getBadgeStyles = (color: string) => {
-    if (color === 'emerald') return 'bg-emerald-50 text-emerald-600';
-    if (color === 'blue') return 'bg-blue-50 text-blue-600';
-    return 'bg-red-50 text-red-500';
-  };
-
-  const getProgressBarColor = (percent: number) => {
-    if (percent >= 70) return 'bg-emerald-500';
-    if (percent >= 30) return 'bg-blue-500';
-    return 'bg-red-500';
-  };
-
-  const getPendingColor = (pending: number) => {
-    if (pending === 0) return 'text-slate-400';
-    if (pending < totalEmployees / 2) return 'text-amber-500';
-    return 'text-red-500';
-  };
 
   const handleAddActivity = async () => {
     if (!newTitle.trim() || !newDescription.trim()) {
@@ -235,6 +208,10 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
+              <div className="bg-slate-100 rounded-lg px-4 py-2 min-w-[100px] text-center">
+                <div className="text-2xl font-bold text-slate-500">{metrics.total}</div>
+                <div className="text-xs text-slate-500">Total</div>
+              </div>
               <div className="bg-emerald-50 rounded-lg px-4 py-2 min-w-[100px] text-center">
                 <div className="text-2xl font-bold text-emerald-600">{metrics.completed}</div>
                 <div className="text-xs text-emerald-600">Completas</div>
@@ -244,13 +221,13 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
                 <div className="text-xs text-amber-500">Pendientes</div>
               </div>
               <div className="bg-slate-100 rounded-lg px-4 py-2 min-w-[100px] text-center">
-                <div className="text-2xl font-bold text-slate-500">{metrics.total}</div>
-                <div className="text-xs text-slate-500">Total</div>
-              </div>
+                <div className="text-2xl font-bold text-slate-500">{overallProgress}%</div>
+                <div className="text-xs text-slate-500">Cumplimiento</div>
+              </div>              
             </div>
           </div>
         </div>
-
+        {/*
         <div className="bg-white border border-slate-200 rounded-xl px-7 py-4">
           <div className="flex items-center justify-between gap-4">
             <span className="text-slate-600 font-medium whitespace-nowrap">Progreso general</span>
@@ -265,7 +242,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
             <span className="text-emerald-600 font-semibold whitespace-nowrap">{overallProgress}%</span>
           </div>
         </div>
-
+        */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Actividades</h4>
@@ -324,7 +301,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
                   </div>
                   <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-4">
                     <div className="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                      <div className="h-full rounded-full bg-emerald-500" style={{ width: `${percent}%` }}></div>
+                      <div className={`h-full rounded-full ${getProgressBarColor(percent)}`} style={{ width: `${percent}%` }}></div>
                     </div>
                     <button
                       onClick={() => setActivityToView(activity)}
