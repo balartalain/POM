@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { User, Role, Plan } from '../types';
-import { userService, UserActivity } from '../services/UserService';
+import { Role, Plan } from '../types';
+import { userService, UserActivity, UserWithMetrics } from '../services/UserService';
 import { planService } from '../services/PlanService';
 import Spinner from './shared/Spinner';
 import { getBgColor, getTextColor, getProgressBarColor, getAvatarColor } from '@/utils/progressColor';
+import { formatDate } from '@/utils/formatDate';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -71,32 +72,48 @@ const YEAR_OPTIONS = Array.from({ length: 4 }, (_, i) => CURRENT_YEAR - i);
 const EmployeesView: React.FC = () => {
   const [year, setYear] = useState(CURRENT_YEAR);
 
-  const [employees, setEmployees]           = useState<User[]>([]);
+  const [employees, setEmployees]           = useState<UserWithMetrics[]>([]);
   const [plans, setPlans]                   = useState<Plan[]>([]);
   const [selectedPlanId, setSelectedPlanId] = useState<number | null>(null);
   const [selectedEmpId, setSelectedEmpId]   = useState<number | null>(null);
   const [selActs, setSelActs]               = useState<UserActivity[]>([]);
   const [loadingInit, setLoadingInit]       = useState(true);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [search, setSearch]                 = useState('');
 
-  // Load employees + plans
+  // Load plans
   useEffect(() => {
     let cancelled = false;
-    Promise.all([userService.getUsers(), planService.getPlans(year)])
-      .then(([users, fetchedPlans]) => {
+    setLoadingInit(true);
+    planService.getPlans(year)
+      .then(fetchedPlans => {
         if (cancelled) return;
-        const emps = users.filter(u => u.role === Role.EMPLOYEE);
-        const ps   = fetchedPlans.slice(0, 3);
-        setEmployees(emps);
+        const ps = fetchedPlans.slice(0, 3);
         setPlans(ps);
-        if (ps.length > 0)   setSelectedPlanId(ps[0].id);
-        if (emps.length > 0) setSelectedEmpId(emps[0].id);
+        setSelectedPlanId(ps.length > 0 ? ps[0].id : null);
       })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoadingInit(false); });
     return () => { cancelled = true; };
   }, [year]);
+
+  // Load employees with metrics when plan changes
+  useEffect(() => {
+    if (!selectedPlanId) return;
+    let cancelled = false;
+    setLoadingEmployees(true);
+    userService.getUsersWithMetrics(selectedPlanId)
+      .then(users => {
+        if (cancelled) return;
+        const emps = users.filter(u => u.role === Role.EMPLOYEE);
+        setEmployees(emps);
+        setSelectedEmpId(prev => prev ?? (emps.length > 0 ? emps[0].id : null));
+      })
+      .catch(() => { if (!cancelled) setEmployees([]); })
+      .finally(() => { if (!cancelled) setLoadingEmployees(false); });
+    return () => { cancelled = true; };
+  }, [selectedPlanId]);
 
   // Load activities for the selected employee + plan on demand
   useEffect(() => {
@@ -115,11 +132,17 @@ const EmployeesView: React.FC = () => {
   const selectedEmployee = useMemo(() => employees.find(e => e.id === selectedEmpId) ?? null, [employees, selectedEmpId]);
 
   const filteredEmployees = useMemo(
-    () => search.trim()
-      ? employees.filter(e => e.name.toLowerCase().includes(search.toLowerCase()))
-      : employees,
-    [employees, search]
-  );
+  () => {
+    const term = search.trim().toLowerCase();
+    if (!term) return employees;
+
+    return employees.filter(e => 
+      e.name.toLowerCase().includes(term) || 
+      e.username.toLowerCase().includes(term)
+    );
+  },
+  [employees, search]
+);
 
   const selDone  = selActs.filter(a => a.completed).length;
   const selTotal = selActs.length;
@@ -189,11 +212,15 @@ const EmployeesView: React.FC = () => {
 
           {/* List */}
           <div className="overflow-y-auto flex-1">
-            {filteredEmployees.map(emp => {
+            {loadingEmployees ? (
+              <div className="flex justify-center py-8">
+                <Spinner className="h-5 w-5 text-slate-400" />
+              </div>
+            ) : filteredEmployees.map(emp => {
               const selected = emp.id === selectedEmpId;
-              const pct      = selected ? selPct : 0;
-              const done     = selected ? selDone : 0;
-              const total    = selected ? selTotal : 0;
+              const pct      = emp.completedPercentage;
+              const done     = emp.totalCompleted;
+              const total    = emp.totalCompleted + emp.totalPending;
 
               return (
                 <div
@@ -202,7 +229,7 @@ const EmployeesView: React.FC = () => {
                   className={`emp-row px-4 py-3.5 border-b border-slate-100 cursor-pointer transition-colors ${selected ? 'selected' : 'hover:bg-slate-50'}`}
                 >
                   <div className="flex items-center gap-3 mb-2.5">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${selected ? getAvatarColor(pct) : 'bg-slate-100 text-slate-500'}`}>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(pct)}`}>
                       {getInitials(emp.name || emp.username)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -211,21 +238,17 @@ const EmployeesView: React.FC = () => {
                       </p>
                       <p className="text-xs text-slate-400 truncate">{emp.username}</p>
                     </div>
-                    {selected && (
-                      <span className={`text-xs font-bold flex-shrink-0 ${getTextColor(pct)}`}>{pct}%</span>
-                    )}
+                    <span className={`text-xs font-bold flex-shrink-0 ${getTextColor(pct)}`}>{pct}%</span>
                   </div>
-                  {selected && (
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className={`progress-bar h-full rounded-full ${getProgressBarColor(pct)}`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-slate-400 whitespace-nowrap">{done}/{total}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className={`progress-bar h-full rounded-full ${getProgressBarColor(pct)}`}
+                        style={{ width: `${pct}%` }}
+                      />
                     </div>
-                  )}
+                    <span className="text-xs text-slate-400 whitespace-nowrap">{done}/{total}</span>
+                  </div>
                 </div>
               );
             })}
@@ -244,10 +267,10 @@ const EmployeesView: React.FC = () => {
               <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${getAvatarColor(selPct)}`}>
-                    {getInitials(selectedEmployee.name)}
+                    {getInitials(selectedEmployee.name || selectedEmployee.username)}
                   </div>
                   <div>
-                    <p className="text-base font-semibold text-slate-800">{selectedEmployee.name}</p>
+                    <p className="text-base font-semibold text-slate-800">{selectedEmployee.name || selectedEmployee.username}</p>
                     <p className="text-xs text-slate-400">
                       {selectedPlan.title} · {planLabel(selectedPlan)}
                     </p>
@@ -302,7 +325,7 @@ const EmployeesView: React.FC = () => {
                               <p className="text-xs text-slate-400 mt-0.5">
                                 Completada el{' '}
                                 {act.completedAt
-                                  ? new Date(act.completedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })
+                                  ? formatDate(act.completedAt)
                                   : '—'}
                               </p>
                             ) : (

@@ -54,6 +54,18 @@ interface ApiUserActivity {
   evidence_url: string | null;
 }
 
+interface ApiUserWithMetrics extends ApiUser {
+  total_completed: number;
+  total_pending: number;
+  completed_percentage: number;
+}
+
+export interface UserWithMetrics extends User {
+  totalCompleted: number;
+  totalPending: number;
+  completedPercentage: number;
+}
+
 const mapApiUser = (u: ApiUser): User => ({
   id: u.id,
   username: u.username,
@@ -97,6 +109,17 @@ class UserService {
   async getUsers(): Promise<User[]> {
     const data = await this.request<ApiUser[]>('/api/v1/usuarios/');
     return data.map(mapApiUser);
+  }
+
+  /** GET /api/v1/usuarios/metrics/?plan_id={planId} */
+  async getUsersWithMetrics(planId: number): Promise<UserWithMetrics[]> {
+    const data = await this.request<ApiUserWithMetrics[]>(`/api/v1/usuarios/metrics/?plan_id=${planId}`);
+    return data.map(u => ({
+      ...mapApiUser(u),
+      totalCompleted: u.total_completed,
+      totalPending: u.total_pending,
+      completedPercentage: u.completed_percentage,
+    }));
   }
 
   /** GET /api/v1/usuarios/{userId}/actividades/?year={year} */

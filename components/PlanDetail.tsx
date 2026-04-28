@@ -8,6 +8,7 @@ import { activityService } from '../services/ActivityService';
 import { userService, UserWithCompletion } from '../services/UserService';
 import Spinner from './shared/Spinner';
 import { getProgressBarColor, getBorderColor, getTextColor, getBgColor } from '../utils/progressColor';
+import { formatDate } from '../utils/formatDate';
 
 interface PlanDetailProps {
   plan: Plan;
@@ -181,7 +182,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
   };
 
   const [, month, day] = plan.expiration_date.split('-').map(Number);
-  const deadlineStr = new Date(new Date().getFullYear(), month - 1, day).toLocaleDateString('es-ES');
+  const deadlineStr = formatDate(new Date(new Date().getFullYear(), month - 1, day));
 
   if (loading) {
     return (
@@ -412,7 +413,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
                       <p className="text-xs text-gray-500 mt-0.5 truncate">{u.completion.observations}</p>
                     )}
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {u.completion?.createdAt && new Date(u.completion.createdAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
+                      {u.completion?.createdAt && formatDate(u.completion.createdAt, { day: '2-digit', month: 'long', year: 'numeric' })}
                     </p>
                   </div>
                   {u.completion?.evidenceUrl && (

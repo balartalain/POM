@@ -5,6 +5,7 @@ import { userService, UserActivity } from '../services/UserService';
 import Drawer from './Drawer';
 import Spinner from './shared/Spinner';
 import { useToast } from '../hooks/useToast';
+import { formatDate } from '../utils/formatDate';
 
 const MONTH_NAMES: Record<number, string> = {
   1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
@@ -59,11 +60,6 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
     return Math.round((metrics.completed / metrics.total) * 100);
   }, [metrics]);
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' });
-  };
 
   const closeDrawer = () => {
     setActivityToUpload(null);
@@ -118,7 +114,7 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
   };
 
   const [, month, day] = plan.expiration_date.split('-').map(Number);
-  const deadlineStr = new Date(planYear, month - 1, day).toLocaleDateString('es-ES');
+  const deadlineStr = formatDate(new Date(planYear, month - 1, day));
 
   if (loading) {
     return (

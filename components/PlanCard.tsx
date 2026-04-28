@@ -3,6 +3,7 @@ import React from 'react';
 import { Plan, Role } from '../types';
 import ProgressBar from './ProgressBar';
 import { CalendarIcon, PencilIcon, TrashIcon } from './Icons';
+import { formatDate } from '../utils/formatDate';
 
 interface PlanCardProps {
   plan: Plan;
@@ -60,7 +61,7 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, userRole, onClick, onEdit, on
         <div className="flex items-center gap-2 text-sm text-dark-gray mb-4 mt-1">
           <CalendarIcon className={`w-4 h-4 ${isPastDeadline ? 'text-red-600' : ''}`} />
           <span className={`${isPastDeadline ? 'text-red-700 line-through' : ''}`}>
-            Fecha Límite: {deadline.toLocaleDateString('es-ES')}
+            Fecha Límite: {formatDate(deadline)}
           </span>
         </div>
 
