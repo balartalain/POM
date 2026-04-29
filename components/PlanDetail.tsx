@@ -25,7 +25,6 @@ const MONTH_NAMES: Record<number, string> = {
 
 interface ActivityWithCompletions extends Activity {
   completions: UserWithCompletion[];
-  loadingCompletions: boolean;
 }
 
 const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack }) => {
@@ -64,9 +63,9 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
           data.map(async (activity) => {
             try {
               const completions = await userService.getUsersByActivity(activity.id);
-              return { ...activity, completions, loadingCompletions: false };
+              return { ...activity, completions };
             } catch {
-              return { ...activity, completions: [], loadingCompletions: false };
+              return { ...activity, completions: [] };
             }
           })
         );
@@ -77,35 +76,24 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
     return () => { cancelled = true; };
   }, [plan.id]);
 
-  const totalEmployees = employees.length || 1;
-
   const metrics = useMemo(() => {
-    let completed = 0;
-    let pending = 0;
-    let total = 0;
-    activities.forEach(a => {
-      const completedCount = a.completions.filter(c => c.completion?.evidenceUrl).length;
-      if (completedCount > 0) completed++;
-      else pending++;
-      total++;
-    });
+    const completed = activities.filter(a=>a.total_pending === 0).length;
+    const pending = activities.filter(a=>a.total_pending > 0).length;
+    const total = activities.length;
     return { completed, pending, total };
   }, [activities]);
 
   const overallProgress = useMemo(() => {
     if (activities.length === 0) return 0;
-    let totalPercent = 0;
-    activities.forEach(a => {
-      const completedCount = a.completions.filter(c => c.completion?.evidenceUrl).length;
-      totalPercent += Math.round((completedCount / totalEmployees) * 100);
-    });
-    return Math.round(totalPercent / activities.length);
-  }, [activities, totalEmployees]);
+    
+    const sum = activities.reduce((acc, a) => acc + (a.completion_percentage || 0), 0);
+    return Math.round(sum / activities.length);
+}, [activities]);
 
   const getActivityMetrics = (activity: ActivityWithCompletions) => {
-    const completedCount = activity.completions.filter(c => c.completion?.evidenceUrl).length;
-    const pendingCount = totalEmployees - completedCount;
-    const percent = Math.round((completedCount / totalEmployees) * 100);
+    const completedCount = activity.total_completed;
+    const pendingCount = activity.total_pending || 0;
+    const percent = Math.round((completedCount / activities.length) * 100);
     return { completedCount, pendingCount, percent };
   };
 
@@ -125,8 +113,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
       });
       const newActivity: ActivityWithCompletions = {
         ...created,
-        completions: [],
-        loadingCompletions: false,
+        completions: []
       };
       setActivities(prev => [...prev, newActivity]);
       addToast('Actividad añadida con éxito.', 'success');
@@ -205,7 +192,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
             <div>
               <h3 className="text-2xl font-semibold text-[#1e3a8a]">{plan.title}</h3>
               <p className="text-slate-500 mt-1">
-                {MONTH_NAMES[plan.month] || `Mes ${plan.month}`} • Fecha límite: {deadlineStr} • {totalEmployees} empleado{totalEmployees !== 1 ? 's' : ''}
+                {MONTH_NAMES[plan.month] || `Mes ${plan.month}`} • Fecha límite: {deadlineStr}
               </p>
             </div>
             <div className="flex flex-wrap gap-3">

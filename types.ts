@@ -28,6 +28,9 @@ export interface Activity {
   plan_id: number;
   title: string;
   description: string;
+  total_completed?: number;
+  total_pending?: number;
+  completion_percentage?: number;
 }
 
 export interface Plan {
