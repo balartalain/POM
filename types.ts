@@ -11,14 +11,9 @@ export interface User {
   role: Role;
 }
 
-export enum ActivityStatus {
-  PENDING = 'pending',
-  COMPLETED = 'completed',
-}
 
 export interface ActivityCompletion {
   employeeId: number;
-  status: ActivityStatus;
   completedAt?: string;
   evidenceFile?: string;
 }

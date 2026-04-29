@@ -120,8 +120,8 @@ const EmployeesView: React.FC = () => {
     if (!selectedEmpId || !selectedPlanId) return;
     let cancelled = false;
     setLoadingActivities(true);
-    userService.getUserActivities(selectedEmpId, year)
-      .then(acts => { if (!cancelled) setSelActs(acts.filter(a => a.planId === selectedPlanId)); })
+    userService.getUserActivities(selectedEmpId, selectedPlanId)
+      .then(acts => { if (!cancelled) setSelActs(acts); })
       .catch(() => { if (!cancelled) setSelActs([]); })
       .finally(() => { if (!cancelled) setLoadingActivities(false); });
     return () => { cancelled = true; };

@@ -122,9 +122,9 @@ class UserService {
     }));
   }
 
-  /** GET /api/v1/usuarios/{userId}/actividades/?year={year} */
-  async getUserActivities(userId: number, year: number): Promise<UserActivity[]> {
-    const data = await this.request<ApiUserActivity[]>(`/api/v1/usuarios/${userId}/actividades/?year=${year}`);
+  /** GET /api/v1/usuarios/{userId}/actividades/?plan_id={planId} */
+  async getUserActivities(userId: number, planId: number): Promise<UserActivity[]> {
+    const data = await this.request<ApiUserActivity[]>(`/api/v1/usuarios/${userId}/actividades/?plan_id=${planId}`);
     return data.map(a => ({
       id: a.id,
       planId: a.plan_id,

@@ -27,6 +27,73 @@ interface ActivityWithCompletions extends Activity {
   completions: UserWithCompletion[];
 }
 
+interface ActivityItemProps {
+  activity: ActivityWithCompletions;
+  completedCount: number;
+  pendingCount: number;
+  percent: number;
+  onEdit: (activity: ActivityWithCompletions) => void;
+  onDelete: (activity: ActivityWithCompletions) => void;
+  onView: (activity: ActivityWithCompletions) => void;
+}
+
+const ActivityItem: React.FC<ActivityItemProps> = ({ activity, completedCount, pendingCount, percent, onEdit, onDelete, onView }) => {
+  const borderColor = getBorderColor(percent);
+  return (
+    <div className={`bg-white border border-slate-200 rounded-xl overflow-hidden border-l-4 ${borderColor}`}>
+      <div className="flex items-start gap-6 px-6 py-5">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-1">
+            <h3 className="text-sm font-semibold text-slate-800">{activity.title}</h3>
+            <button
+              onClick={() => onEdit(activity)}
+              className="p-1 text-gray-400 hover:text-blue-700 rounded-full hover:bg-blue-100 transition-all duration-200"
+              aria-label={`Editar actividad ${activity.title}`}
+            >
+              <PencilIcon className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onDelete(activity)}
+              className="p-1 text-gray-400 hover:text-red-700 rounded-full hover:bg-red-100 transition-all duration-200"
+              aria-label={`Eliminar actividad ${activity.title}`}
+            >
+              <TrashIcon className="w-4 h-4" />
+            </button>
+          </div>
+          <p className="text-xs text-slate-400 leading-relaxed">{activity.description}</p>
+        </div>
+        <div className="flex items-center gap-6 flex-shrink-0">
+          <div className="text-center">
+            <p className="text-xl font-semibold text-emerald-600 leading-none">{completedCount}</p>
+            <p className="text-xs text-slate-400 mt-1">Completaron</p>
+          </div>
+          <div className="w-px h-10 bg-slate-100"></div>
+          <div className="text-center">
+            <p className="text-xl font-semibold text-slate-400 leading-none">{pendingCount}</p>
+            <p className="text-xs text-slate-400 mt-1">Faltan</p>
+          </div>
+          <div className="w-px h-10 bg-slate-100"></div>
+          <div className="text-center min-w-[48px]">
+            <p className="text-xl font-semibold text-[#1e3a8a] leading-none">{percent}%</p>
+            <p className="text-xs text-slate-400 mt-1">Completado</p>
+          </div>
+        </div>
+      </div>
+      <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-4">
+        <div className="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+          <div className={`h-full rounded-full ${getProgressBarColor(percent)}`} style={{ width: `${percent}%` }}></div>
+        </div>
+        <button
+          onClick={() => onView(activity)}
+          className="text-xs text-[#1e3a8a] hover:underline font-medium whitespace-nowrap"
+        >
+          Ver progreso →
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack }) => {
   const [activities, setActivities] = useState<ActivityWithCompletions[]>([]);
   const [loading, setLoading] = useState(false);
@@ -245,60 +312,17 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
           <div className="space-y-4">
             {activities.length > 0 ? activities.map(activity => {
               const { completedCount, pendingCount, percent } = getActivityMetrics(activity);
-              const borderColor = getBorderColor(percent);
-
               return (
-                <div key={activity.id} className={`bg-white border border-slate-200 rounded-xl overflow-hidden border-l-4 ${borderColor}`}>
-                  <div className="flex items-start gap-6 px-6 py-5">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-sm font-semibold text-slate-800">{activity.title}</h3>
-                        <button
-                          onClick={() => setActivityToEdit(activity)}
-                          className="p-1 text-gray-400 hover:text-blue-700 rounded-full hover:bg-blue-100 transition-all duration-200"
-                          aria-label={`Editar actividad ${activity.title}`}
-                        >
-                          <PencilIcon className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setActivityToDelete(activity)}
-                          className="p-1 text-gray-400 hover:text-red-700 rounded-full hover:bg-red-100 transition-all duration-200"
-                          aria-label={`Eliminar actividad ${activity.title}`}
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <p className="text-xs text-slate-400 leading-relaxed">{activity.description}</p>
-                    </div>
-                    <div className="flex items-center gap-6 flex-shrink-0">
-                      <div className="text-center">
-                        <p className="text-xl font-semibold text-emerald-600 leading-none">{completedCount}</p>
-                        <p className="text-xs text-slate-400 mt-1">Completaron</p>
-                      </div>
-                      <div className="w-px h-10 bg-slate-100"></div>
-                      <div className="text-center">
-                        <p className="text-xl font-semibold text-slate-400 leading-none">{pendingCount}</p>
-                        <p className="text-xs text-slate-400 mt-1">Faltan</p>
-                      </div>
-                      <div className="w-px h-10 bg-slate-100"></div>
-                      <div className="text-center min-w-[48px]">
-                        <p className="text-xl font-semibold text-[#1e3a8a] leading-none">{percent}%</p>
-                        <p className="text-xs text-slate-400 mt-1">Completado</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-4">
-                    <div className="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                      <div className={`h-full rounded-full ${getProgressBarColor(percent)}`} style={{ width: `${percent}%` }}></div>
-                    </div>
-                    <button
-                      onClick={() => setActivityToView(activity)}
-                      className="text-xs text-[#1e3a8a] hover:underline font-medium whitespace-nowrap"
-                    >
-                      Ver progreso →
-                    </button>
-                  </div>
-                </div>
+                <ActivityItem
+                  key={activity.id}
+                  activity={activity}
+                  completedCount={completedCount}
+                  pendingCount={pendingCount}
+                  percent={percent}
+                  onEdit={setActivityToEdit}
+                  onDelete={setActivityToDelete}
+                  onView={setActivityToView}
+                />
               );
             }) : (
               <div className="text-center text-slate-500 p-8 bg-white border border-slate-200 rounded-xl">
