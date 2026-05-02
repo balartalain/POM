@@ -2,6 +2,7 @@
 import React from 'react';
 import { User } from '../types';
 import { LogoutIcon } from './Icons';
+import OnlineIndicator from './OnlineIndicator';
 
 interface HeaderProps {
   user: User;
@@ -17,6 +18,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
             <h1 className="text-lg sm:text-2xl font-bold text-white">Plan de Actividades</h1>
           </div>
           <div className="flex items-center space-x-4">
+            <OnlineIndicator />
             <div className="text-right">
               <p className="text-sm font-medium text-white">{user.name}</p>
               <p className="text-xs text-indigo-200 capitalize">{user.role}</p>
