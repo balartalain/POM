@@ -64,6 +64,12 @@ const ExternalIcon = () => (
   </svg>
 );
 
+const BackArrowIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <path d="M19 12H5M12 5l-7 7 7 7"/>
+  </svg>
+);
+
 // ── component ─────────────────────────────────────────────────────────────────
 
 const CURRENT_YEAR = new Date().getFullYear();
@@ -81,6 +87,7 @@ const EmployeesView: React.FC = () => {
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [loadingActivities, setLoadingActivities] = useState(false);
   const [search, setSearch]                 = useState('');
+  const [showDetail, setShowDetail]         = useState(false);
 
   // Load plans
   useEffect(() => {
@@ -202,173 +209,274 @@ const EmployeesView: React.FC = () => {
       )}
 
       {/* Split panel */}
-      {plans.length > 0 && <div className="flex-1 flex overflow-hidden">
+      {plans.length > 0 && (
+        <>
+          {/* ── Mobile: sliding panels (< md) ─────────────────────────────── */}
+          <div className="md:hidden flex-1 relative overflow-hidden">
 
-        {/* ── Left: employee list ──────────────────────────────────────── */}
-        <div className="w-80 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col overflow-hidden">
-
-          {/* Search */}
-          <div className="px-4 py-3 border-b border-slate-100">
-            <div className="relative">
-              <SearchIcon />
-              <input
-                type="text"
-                placeholder="Buscar empleado..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900/20 bg-slate-50"
-              />
-            </div>
-          </div>
-
-          {/* List */}
-          <div className="overflow-y-auto flex-1">
-            {loadingEmployees ? (
-              <div className="flex justify-center py-8">
-                <Spinner className="h-5 w-5 text-slate-400" />
+            {/* Employee list — slides out to the left */}
+            <div className={`absolute inset-0 flex flex-col bg-white transition-transform duration-300 ease-in-out ${showDetail ? '-translate-x-full' : 'translate-x-0'}`}>
+              <div className="px-4 py-3 border-b border-slate-100 flex-shrink-0">
+                <div className="relative">
+                  <SearchIcon />
+                  <input
+                    type="text"
+                    placeholder="Buscar empleado..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900/20 bg-slate-50"
+                  />
+                </div>
               </div>
-            ) : filteredEmployees.map(emp => {
-              const selected = emp.id === selectedEmpId;
-              const pct      = emp.completedPercentage;
-              const done     = emp.totalCompleted;
-              const total    = emp.totalCompleted + emp.totalPending;
+              <div className="overflow-y-auto flex-1">
+                {loadingEmployees ? (
+                  <div className="flex justify-center py-8"><Spinner className="h-5 w-5 text-slate-400" /></div>
+                ) : filteredEmployees.map(emp => {
+                  const pct   = emp.completedPercentage;
+                  const done  = emp.totalCompleted;
+                  const total = emp.totalCompleted + emp.totalPending;
+                  return (
+                    <div
+                      key={emp.id}
+                      onClick={() => { setSelectedEmpId(emp.id); setShowDetail(true); }}
+                      className="emp-row px-4 py-3.5 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 mb-2.5">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(pct)}`}>
+                          {getInitials(emp.name || emp.username)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-800 truncate">{emp.name}</p>
+                          <p className="text-xs text-slate-400 truncate">{emp.username}</p>
+                        </div>
+                        <span className={`text-xs font-bold flex-shrink-0 ${getTextColor(pct)}`}>{pct}%</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                          <div className={`progress-bar h-full rounded-full ${getProgressBarColor(pct)}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-xs text-slate-400 whitespace-nowrap">{done}/{total}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-              return (
-                <div
-                  key={emp.id}
-                  onClick={() => setSelectedEmpId(emp.id)}
-                  className={`emp-row px-4 py-3.5 border-b border-slate-100 cursor-pointer transition-colors ${selected ? 'selected' : 'hover:bg-slate-50'}`}
+            {/* Detail panel — slides in from the right */}
+            <div className={`absolute inset-0 overflow-y-auto bg-slate-50 transition-transform duration-300 ease-in-out ${showDetail ? 'translate-x-0' : 'translate-x-full'}`}>
+              <div className="p-4 flex flex-col gap-4">
+                <button
+                  onClick={() => setShowDetail(false)}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-[#1e3a8a]"
                 >
-                  <div className="flex items-center gap-3 mb-2.5">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(pct)}`}>
-                      {getInitials(emp.name || emp.username)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className={`text-sm font-medium emp-name truncate ${selected ? 'text-[#1e3a8a]' : 'text-slate-800'}`}>
-                        {emp.name}
-                      </p>
-                      <p className="text-xs text-slate-400 truncate">{emp.username}</p>
-                    </div>
-                    <span className={`text-xs font-bold flex-shrink-0 ${getTextColor(pct)}`}>{pct}%</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className={`progress-bar h-full rounded-full ${getProgressBarColor(pct)}`}
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                    <span className="text-xs text-slate-400 whitespace-nowrap">{done}/{total}</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+                  <BackArrowIcon />
+                  Empleados
+                </button>
 
-        {/* ── Right: detail panel ──────────────────────────────────────── */}
-        <div className="flex-1 bg-slate-50 p-6 overflow-y-auto flex flex-col gap-5">
-          {!selectedEmployee || !selectedPlan ? (
-            <div className="flex items-center justify-center h-full text-sm text-slate-400">
-              Selecciona un empleado
+                {selectedEmployee && selectedPlan ? (
+                  <>
+                    <div className="bg-white border border-slate-200 rounded-xl px-4 py-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${getAvatarColor(selPct)}`}>
+                          {getInitials(selectedEmployee.name || selectedEmployee.username)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">{selectedEmployee.name || selectedEmployee.username}</p>
+                          <p className="text-xs text-slate-400">{selectedPlan.title} · {planLabel(selectedPlan)}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="flex-1 text-center bg-emerald-50 rounded-lg py-2">
+                          <p className="text-base font-semibold text-emerald-600 leading-none">{selDone}</p>
+                          <p className="text-xs text-emerald-500 mt-0.5">Completadas</p>
+                        </div>
+                        <div className="flex-1 text-center bg-amber-50 rounded-lg py-2">
+                          <p className="text-base font-semibold text-amber-500 leading-none">{selTotal - selDone}</p>
+                          <p className="text-xs text-amber-500 mt-0.5">Faltan</p>
+                        </div>
+                        <div className={`flex-1 text-center ${getBgColor(selPct)} rounded-lg py-2`}>
+                          <p className={`text-base font-semibold leading-none ${getTextColor(selPct)}`}>{selPct}%</p>
+                          <p className={`text-xs ${getTextColor(selPct)} mt-0.5`}>Cumplimiento</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Actividades</p>
+                      {loadingActivities ? (
+                        <div className="flex justify-center py-6"><Spinner className="h-5 w-5 text-slate-400" /></div>
+                      ) : selActs.length === 0 ? (
+                        <p className="text-sm text-slate-400 text-center py-6">No hay actividades en este Plan</p>
+                      ) : (
+                        <div className="flex flex-col gap-2">
+                          {selActs.map(act => (
+                            <div key={act.id} className={`bg-white border border-slate-200 rounded-xl overflow-hidden flex items-center gap-3 px-4 py-3 border-l-4 ${act.completed ? 'border-l-emerald-400' : 'border-l-slate-200'}`}>
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${act.completed ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+                                {act.completed ? <CheckIcon /> : <ClockIcon />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-medium ${act.completed ? 'text-slate-800' : 'text-slate-500'}`}>{act.title}</p>
+                                {act.completed ? (
+                                  <p className="text-xs text-slate-400 mt-0.5">Completada el {act.completedAt ? formatDate(act.completedAt) : '—'}</p>
+                                ) : (
+                                  <p className="text-xs text-amber-400 mt-0.5">Pendiente</p>
+                                )}
+                              </div>
+                              {act.completed ? (
+                                act.evidenceUrl ? (
+                                  <a href={act.evidenceUrl} target="_blank" rel="noopener noreferrer"
+                                     className="text-xs text-blue-600 hover:underline flex items-center gap-1 flex-shrink-0">
+                                    <ExternalIcon />Ver evidencia
+                                  </a>
+                                ) : (
+                                  <span className="text-xs text-slate-300 flex-shrink-0">Sin evidencia</span>
+                                )
+                              ) : (
+                                <span className="text-xs bg-amber-50 text-amber-500 px-2.5 py-1 rounded-full flex-shrink-0">Pendiente</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : null}
+              </div>
             </div>
-          ) : (
-            <>
-              {/* Employee header card */}
-              <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${getAvatarColor(selPct)}`}>
-                    {getInitials(selectedEmployee.name || selectedEmployee.username)}
-                  </div>
-                  <div>
-                    <p className="text-base font-semibold text-slate-800">{selectedEmployee.name || selectedEmployee.username}</p>
-                    <p className="text-xs text-slate-400">
-                      {selectedPlan.title} · {planLabel(selectedPlan)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <div className="text-center bg-emerald-50 rounded-lg px-4 py-2 min-w-[56px]">
-                    <p className="text-lg font-semibold text-emerald-600 leading-none">{selDone}</p>
-                    <p className="text-xs text-emerald-500 mt-0.5">Completadas</p>
-                  </div>
-                  <div className="text-center bg-amber-50 rounded-lg px-4 py-2 min-w-[56px]">
-                    <p className="text-lg font-semibold text-amber-500 leading-none">{selTotal - selDone}</p>
-                    <p className="text-xs text-amber-500 mt-0.5">Faltan</p>
-                  </div>
-                  <div className={`${getBgColor(selPct)} rounded-lg px-4 py-2 min-w-[56px] text-center`}>
-                    <p className={`text-lg font-semibold leading-none ${getTextColor(selPct)}`}>{selPct}%</p>
-                    <p className={`text-xs ${getTextColor(selPct)} mt-0.5`}>Cumplimiento</p>
-                  </div>
+          </div>
+
+          {/* ── Desktop: split panel (md+) ────────────────────────────────── */}
+          <div className="hidden md:flex flex-1 overflow-hidden">
+
+            {/* Left: employee list */}
+            <div className="w-80 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-100">
+                <div className="relative">
+                  <SearchIcon />
+                  <input
+                    type="text"
+                    placeholder="Buscar empleado..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-900/20 bg-slate-50"
+                  />
                 </div>
               </div>
+              <div className="overflow-y-auto flex-1">
+                {loadingEmployees ? (
+                  <div className="flex justify-center py-8"><Spinner className="h-5 w-5 text-slate-400" /></div>
+                ) : filteredEmployees.map(emp => {
+                  const selected = emp.id === selectedEmpId;
+                  const pct      = emp.completedPercentage;
+                  const done     = emp.totalCompleted;
+                  const total    = emp.totalCompleted + emp.totalPending;
+                  return (
+                    <div
+                      key={emp.id}
+                      onClick={() => setSelectedEmpId(emp.id)}
+                      className={`emp-row px-4 py-3.5 border-b border-slate-100 cursor-pointer transition-colors ${selected ? 'selected' : 'hover:bg-slate-50'}`}
+                    >
+                      <div className="flex items-center gap-3 mb-2.5">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(pct)}`}>
+                          {getInitials(emp.name || emp.username)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium emp-name truncate ${selected ? 'text-[#1e3a8a]' : 'text-slate-800'}`}>{emp.name}</p>
+                          <p className="text-xs text-slate-400 truncate">{emp.username}</p>
+                        </div>
+                        <span className={`text-xs font-bold flex-shrink-0 ${getTextColor(pct)}`}>{pct}%</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                          <div className={`progress-bar h-full rounded-full ${getProgressBarColor(pct)}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-xs text-slate-400 whitespace-nowrap">{done}/{total}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
 
-              {/* Activities */}
-              <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-                  Actividades
-                </p>
-                {loadingActivities ? (
-                  <div className="flex justify-center py-6">
-                    <Spinner className="h-5 w-5 text-slate-400" />
+            {/* Right: detail panel */}
+            <div className="flex-1 bg-slate-50 p-6 overflow-y-auto flex flex-col gap-5">
+              {!selectedEmployee || !selectedPlan ? (
+                <div className="flex items-center justify-center h-full text-sm text-slate-400">
+                  Selecciona un empleado
+                </div>
+              ) : (
+                <>
+                  <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${getAvatarColor(selPct)}`}>
+                        {getInitials(selectedEmployee.name || selectedEmployee.username)}
+                      </div>
+                      <div>
+                        <p className="text-base font-semibold text-slate-800">{selectedEmployee.name || selectedEmployee.username}</p>
+                        <p className="text-xs text-slate-400">{selectedPlan.title} · {planLabel(selectedPlan)}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div className="text-center bg-emerald-50 rounded-lg px-4 py-2 min-w-[56px]">
+                        <p className="text-lg font-semibold text-emerald-600 leading-none">{selDone}</p>
+                        <p className="text-xs text-emerald-500 mt-0.5">Completadas</p>
+                      </div>
+                      <div className="text-center bg-amber-50 rounded-lg px-4 py-2 min-w-[56px]">
+                        <p className="text-lg font-semibold text-amber-500 leading-none">{selTotal - selDone}</p>
+                        <p className="text-xs text-amber-500 mt-0.5">Faltan</p>
+                      </div>
+                      <div className={`${getBgColor(selPct)} rounded-lg px-4 py-2 min-w-[56px] text-center`}>
+                        <p className={`text-lg font-semibold leading-none ${getTextColor(selPct)}`}>{selPct}%</p>
+                        <p className={`text-xs ${getTextColor(selPct)} mt-0.5`}>Cumplimiento</p>
+                      </div>
+                    </div>
                   </div>
-                ) : selActs.length === 0 ? (
-                  <p className="text-sm text-slate-400 text-center py-6">
-                    No hay actividades en este Plan
-                  </p>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    {selActs.map(act => (
-                      <div key={act.id} className={`bg-white border border-slate-200 rounded-xl overflow-hidden flex items-center gap-4 px-5 py-4 border-l-4 ${act.completed ? 'border-l-emerald-400' : 'border-l-slate-200'}`}>
 
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${act.completed ? 'bg-emerald-100' : 'bg-slate-100'}`}>
-                            {act.completed ? <CheckIcon /> : <ClockIcon />}
-                          </div>
-
-                          <div className="flex-1">
-                            <p className={`text-sm font-medium ${act.completed ? 'text-slate-800' : 'text-slate-500'}`}>
-                              {act.title}
-                            </p>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Actividades</p>
+                    {loadingActivities ? (
+                      <div className="flex justify-center py-6"><Spinner className="h-5 w-5 text-slate-400" /></div>
+                    ) : selActs.length === 0 ? (
+                      <p className="text-sm text-slate-400 text-center py-6">No hay actividades en este Plan</p>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {selActs.map(act => (
+                          <div key={act.id} className={`bg-white border border-slate-200 rounded-xl overflow-hidden flex items-center gap-4 px-5 py-4 border-l-4 ${act.completed ? 'border-l-emerald-400' : 'border-l-slate-200'}`}>
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${act.completed ? 'bg-emerald-100' : 'bg-slate-100'}`}>
+                              {act.completed ? <CheckIcon /> : <ClockIcon />}
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-sm font-medium ${act.completed ? 'text-slate-800' : 'text-slate-500'}`}>{act.title}</p>
+                              {act.completed ? (
+                                <p className="text-xs text-slate-400 mt-0.5">Completada el {act.completedAt ? formatDate(act.completedAt) : '—'}</p>
+                              ) : (
+                                <p className="text-xs text-amber-400 mt-0.5">Pendiente</p>
+                              )}
+                            </div>
                             {act.completed ? (
-                              <p className="text-xs text-slate-400 mt-0.5">
-                                Completada el{' '}
-                                {act.completedAt
-                                  ? formatDate(act.completedAt)
-                                  : '—'}
-                              </p>
+                              act.evidenceUrl ? (
+                                <a href={act.evidenceUrl} target="_blank" rel="noopener noreferrer"
+                                   className="text-xs text-blue-600 hover:underline flex items-center gap-1 flex-shrink-0">
+                                  <ExternalIcon />Ver evidencia
+                                </a>
+                              ) : (
+                                <span className="text-xs text-slate-300 flex-shrink-0">Sin evidencia</span>
+                              )
                             ) : (
-                              <p className="text-xs text-amber-400 mt-0.5">Pendiente</p>
+                              <span className="text-xs bg-amber-50 text-amber-500 px-2.5 py-1 rounded-full flex-shrink-0">Pendiente</span>
                             )}
                           </div>
-
-                          {act.completed ? (
-                            act.evidenceUrl ? (
-                              <a
-                                href={act.evidenceUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-blue-600 hover:underline flex items-center gap-1 flex-shrink-0"
-                              >
-                                <ExternalIcon />
-                                Ver evidencia
-                              </a>
-                            ) : (
-                              <span className="text-xs text-slate-300 flex-shrink-0">Sin evidencia</span>
-                            )
-                          ) : (
-                            <span className="text-xs bg-amber-50 text-amber-500 px-2.5 py-1 rounded-full flex-shrink-0">
-                              Pendiente
-                            </span>
-                          )}
-                        </div>           
-                    ))}
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </div>}
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
