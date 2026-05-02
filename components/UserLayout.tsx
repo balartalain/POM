@@ -57,15 +57,19 @@ const UserLayout: React.FC<UserLayoutProps> = ({ employee }) => {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <h2 className="text-2xl font-bold text-dark-gray">Planes del Año {selectedYear}</h2>
-        <div className="flex items-center gap-2">
-          <label htmlFor="year-select" className="text-sm font-medium text-dark-gray">Año:</label>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg sm:text-2xl font-bold text-dark-gray leading-tight">
+          <span className="block sm:inline">Planes del Año</span>
+          <span className="sm:hidden text-primary ml-1">{selectedYear}</span>
+          <span className="hidden sm:inline"> {selectedYear}</span>
+        </h2>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <label htmlFor="year-select" className="hidden sm:inline text-sm font-medium text-dark-gray">Año:</label>
           <select
             id="year-select"
             value={selectedYear}
             onChange={e => setSelectedYear(Number(e.target.value))}
-            className="bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary"
+            className="bg-white border border-gray-300 rounded-md shadow-sm py-1.5 sm:py-2 px-2 sm:px-3 text-sm focus:outline-none focus:ring-primary focus:border-primary"
           >
             {YEARS.map(year => <option key={year} value={year}>{year}</option>)}
           </select>

@@ -286,25 +286,25 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
           Planes
         </button>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-7">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+        <div className="bg-white border border-slate-200 rounded-xl p-4 lg:p-7">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-6">
             <div>
-              <h3 className="text-2xl font-semibold text-[#1e3a8a]">{plan.title}</h3>
-              <p className="text-slate-500 mt-1">
+              <h3 className="text-lg lg:text-2xl font-semibold text-[#1e3a8a]">{plan.title}</h3>
+              <p className="text-sm text-slate-500 mt-0.5">
                 {MONTH_NAMES[plan.month] || `Mes ${plan.month}`} • Fecha límite: {deadlineStr}
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <div className="bg-emerald-50 rounded-lg px-4 py-2 min-w-[80px] text-center">
-                <div className="text-2xl font-bold text-emerald-600">{metrics.completed}</div>
+            <div className="grid grid-cols-2 lg:flex gap-2 lg:gap-3 w-full lg:w-auto">
+              <div className="bg-emerald-50 rounded-lg px-2 lg:px-4 py-2 text-center">
+                <div className="text-xl lg:text-2xl font-bold text-emerald-600">{metrics.completed}</div>
                 <div className="text-xs text-emerald-600">Completadas</div>
               </div>
-              <div className="bg-amber-50 rounded-lg px-4 py-2 min-w-[80px] text-center">
-                <div className="text-2xl font-bold text-amber-500">{metrics.pending}</div>
+              <div className="bg-amber-50 rounded-lg px-2 lg:px-4 py-2 text-center">
+                <div className="text-xl lg:text-2xl font-bold text-amber-500">{metrics.pending}</div>
                 <div className="text-xs text-amber-500">Pendientes</div>
               </div>
-              <div className="bg-slate-100 rounded-lg px-4 py-2 min-w-[80px] text-center">
-                <div className="text-2xl font-bold text-slate-500">{metrics.total}</div>
+              <div className="col-span-2 lg:col-span-1 bg-slate-100 rounded-lg px-2 lg:px-4 py-2 text-center">
+                <div className="text-xl lg:text-2xl font-bold text-slate-500">{metrics.total}</div>
                 <div className="text-xs text-slate-500">Total</div>
               </div>
             </div>

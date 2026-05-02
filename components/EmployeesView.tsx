@@ -286,16 +286,16 @@ const EmployeesView: React.FC = () => {
                           <p className="text-xs text-slate-400">{selectedPlan.title} · {planLabel(selectedPlan)}</p>
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <div className="flex-1 text-center bg-emerald-50 rounded-lg py-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="text-center bg-emerald-50 rounded-lg py-2">
                           <p className="text-base font-semibold text-emerald-600 leading-none">{selDone}</p>
                           <p className="text-xs text-emerald-500 mt-0.5">Completadas</p>
                         </div>
-                        <div className="flex-1 text-center bg-amber-50 rounded-lg py-2">
+                        <div className="text-center bg-amber-50 rounded-lg py-2">
                           <p className="text-base font-semibold text-amber-500 leading-none">{selTotal - selDone}</p>
                           <p className="text-xs text-amber-500 mt-0.5">Faltan</p>
                         </div>
-                        <div className={`flex-1 text-center ${getBgColor(selPct)} rounded-lg py-2`}>
+                        <div className={`col-span-2 text-center ${getBgColor(selPct)} rounded-lg py-2`}>
                           <p className={`text-base font-semibold leading-none ${getTextColor(selPct)}`}>{selPct}%</p>
                           <p className={`text-xs ${getTextColor(selPct)} mt-0.5`}>Cumplimiento</p>
                         </div>
@@ -407,7 +407,7 @@ const EmployeesView: React.FC = () => {
                 </div>
               ) : (
                 <>
-                  <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 flex items-center justify-between gap-4">
+                  <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${getAvatarColor(selPct)}`}>
                         {getInitials(selectedEmployee.name || selectedEmployee.username)}
@@ -417,16 +417,16 @@ const EmployeesView: React.FC = () => {
                         <p className="text-xs text-slate-400">{selectedPlan.title} · {planLabel(selectedPlan)}</p>
                       </div>
                     </div>
-                    <div className="flex gap-3">
-                      <div className="text-center bg-emerald-50 rounded-lg px-4 py-2 min-w-[56px]">
+                    <div className="grid grid-cols-2 xl:flex gap-2 xl:gap-3">
+                      <div className="text-center bg-emerald-50 rounded-lg px-3 xl:px-4 py-2 xl:min-w-[56px]">
                         <p className="text-lg font-semibold text-emerald-600 leading-none">{selDone}</p>
                         <p className="text-xs text-emerald-500 mt-0.5">Completadas</p>
                       </div>
-                      <div className="text-center bg-amber-50 rounded-lg px-4 py-2 min-w-[56px]">
+                      <div className="text-center bg-amber-50 rounded-lg px-3 xl:px-4 py-2 xl:min-w-[56px]">
                         <p className="text-lg font-semibold text-amber-500 leading-none">{selTotal - selDone}</p>
                         <p className="text-xs text-amber-500 mt-0.5">Faltan</p>
                       </div>
-                      <div className={`${getBgColor(selPct)} rounded-lg px-4 py-2 min-w-[56px] text-center`}>
+                      <div className={`col-span-2 xl:col-span-1 text-center ${getBgColor(selPct)} rounded-lg px-3 xl:px-4 py-2 xl:min-w-[56px]`}>
                         <p className={`text-lg font-semibold leading-none ${getTextColor(selPct)}`}>{selPct}%</p>
                         <p className={`text-xs ${getTextColor(selPct)} mt-0.5`}>Cumplimiento</p>
                       </div>
