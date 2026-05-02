@@ -194,8 +194,15 @@ const EmployeesView: React.FC = () => {
         </div>
       </div>
 
+      {/* No plans message */}
+      {plans.length === 0 && (
+        <div className="flex-1 flex items-center justify-center text-sm text-slate-400">
+          No hay planes en este año
+        </div>
+      )}
+
       {/* Split panel */}
-      <div className="flex-1 flex overflow-hidden">
+      {plans.length > 0 && <div className="flex-1 flex overflow-hidden">
 
         {/* ── Left: employee list ──────────────────────────────────────── */}
         <div className="w-80 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col overflow-hidden">
@@ -307,7 +314,7 @@ const EmployeesView: React.FC = () => {
                   </div>
                 ) : selActs.length === 0 ? (
                   <p className="text-sm text-slate-400 text-center py-6">
-                    No hay actividades en este plan
+                    No hay actividades en este Plan
                   </p>
                 ) : (
                   <div className="flex flex-col gap-2">
@@ -361,7 +368,7 @@ const EmployeesView: React.FC = () => {
             </>
           )}
         </div>
-      </div>
+      </div>}
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { User, Role } from './types';
 import { userService } from './services/UserService';
 import Login from './components/Login';
 import SupervisorLayout from './components/SupervisorLayout';
-import EmployeeDashboard from './components/EmployeeDashboard';
+import UserLayout from './components/UserLayout';
 import Header from './components/Header';
 import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ToastContainer';

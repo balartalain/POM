@@ -16,6 +16,7 @@ export interface ActivityCompletion {
   employeeId: number;
   completedAt?: string;
   evidenceFile?: string;
+  
 }
 
 export interface Activity {
@@ -36,4 +37,5 @@ export interface Plan {
   month: number;
   total_activities: number;
   total_completed: number;
+  completion_percentage: number;
 }

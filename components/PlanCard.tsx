@@ -17,9 +17,6 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, userRole, onClick, onEdit, on
   const [year, month, day] = plan.expiration_date.split('-').map(Number);
   const deadline = new Date(year, month - 1, day, 23, 59, 59);
   const isPastDeadline = new Date() > deadline;
-  const progress = plan.total_activities > 0
-    ? (plan.total_completed / plan.total_activities) * 100
-    : 0;
 
   const handleCardClick = () => {
     if (onClick) onClick();
@@ -68,9 +65,9 @@ const PlanCard: React.FC<PlanCardProps> = ({ plan, userRole, onClick, onEdit, on
         <div className="mt-auto">
           <div className="flex justify-between items-center text-sm text-dark-gray mb-1">
             <span>Progreso</span>
-            <span>{Math.round(progress)}%</span>
+            <span>{Math.round(plan.completion_percentage)}%</span>
           </div>
-          <ProgressBar value={progress} />
+          <ProgressBar value={plan.completion_percentage} />
         </div>
       </div>
     </div>

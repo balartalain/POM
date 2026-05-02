@@ -152,14 +152,10 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
     const completed = activities.filter(a => a.total_pending === 0).length;
     const pending = activities.filter(a => a.total_pending > 0).length;
     const total = activities.length;
-    return { completed, pending, total };
+    const completedPercent = plan.completion_percentage || 0;
+    return { completed, pending, total, completedPercent };
   }, [activities]);
 
-  const overallProgress = useMemo(() => {
-    if (activities.length === 0) return 0;
-    const sum = activities.reduce((acc, a) => acc + (a.completion_percentage || 0), 0);
-    return Math.round(sum / activities.length);
-  }, [activities]);
 
   const getActivityMetrics = (activity: ActivityWithCompletions) => {
     const completedCount = activity.total_completed;
@@ -282,9 +278,9 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
                 <div className="text-2xl font-bold text-amber-500">{metrics.pending}</div>
                 <div className="text-xs text-amber-500">Pendientes</div>
               </div>
-              <div className={`${getBgColor(overallProgress)} rounded-lg px-4 py-2 min-w-[100px] text-center`}>
-                <div className={`text-2xl font-bold ${getTextColor(overallProgress)}`}>{overallProgress}%</div>
-                <div className={`text-xs ${getTextColor(overallProgress)}`}>Cumplimiento</div>
+              <div className={`${getBgColor(metrics.completedPercent)} rounded-lg px-4 py-2 min-w-[100px] text-center`}>
+                <div className={`text-2xl font-bold ${getTextColor(metrics.completedPercent)}`}>{metrics.completedPercent}%</div>
+                <div className={`text-xs ${getTextColor(metrics.completedPercent)}`}>Cumplimiento</div>
               </div>
             </div>
           </div>
@@ -344,12 +340,13 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
                               >
                                 <div className="min-w-0">
                                   <p className="font-medium text-gray-800 text-sm">{u.employeeName}</p>
+                                  <p className="text-xs text-gray-400 mt-0.5">
+                                    Completada el {formatDate(u.createdAt, { day: '2-digit', month: 'long', year: 'numeric' })}
+                                  </p>
                                   {u.observations && (
                                     <p className="text-xs text-gray-500 mt-0.5 truncate">{u.observations}</p>
                                   )}
-                                  <p className="text-xs text-gray-400 mt-0.5">
-                                    {u.createdAt && formatDate(u.createdAt, { day: '2-digit', month: 'long', year: 'numeric' })}
-                                  </p>
+                                  
                                 </div>
                                 {u.evidenceUrl && (
                                   <a

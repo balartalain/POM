@@ -5,7 +5,7 @@ import PlanCard from './PlanCard';
 import EmployeePlanDetail from './EmployeePlanDetail';
 import Spinner from './shared/Spinner';
 
-interface EmployeeDashboardProps {
+interface UserLayoutProps {
   employee: User;
 }
 
@@ -16,7 +16,7 @@ const MONTH_NAMES: Record<number, string> = {
 };
 const YEARS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
 
-const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ employee }) => {
+const UserLayout: React.FC<UserLayoutProps> = ({ employee }) => {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -107,4 +107,4 @@ const EmployeeDashboard: React.FC<EmployeeDashboardProps> = ({ employee }) => {
   );
 };
 
-export default EmployeeDashboard;
+export default UserLayout;
