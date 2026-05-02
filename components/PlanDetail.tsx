@@ -29,79 +29,79 @@ interface ActivityWithCompletions extends Activity {
 interface ActivityItemProps {
   activity: ActivityWithCompletions;
   completedCount: number;
-  pendingCount: number;
   percent: number;
+  isSelected: boolean;
   onEdit: (activity: ActivityWithCompletions) => void;
   onDelete: (activity: ActivityWithCompletions) => void;
-  onView: (activity: ActivityWithCompletions) => void;
+  onSelect: (activity: ActivityWithCompletions) => void;
 }
 
-const ActivityItem: React.FC<ActivityItemProps> = ({ activity, completedCount, pendingCount, percent, onEdit, onDelete, onView }) => {
-  const borderColor = getBorderColor(percent);
+const ActivityItem: React.FC<ActivityItemProps> = ({
+  activity, completedCount, percent, isSelected, onEdit, onDelete, onSelect,
+}) => {
+  const borderColor = isSelected ? 'border-[#2563EB]' : getBorderColor(percent);
   return (
-    <div className={`bg-white border border-slate-200 rounded-xl overflow-hidden border-l-4 ${borderColor}`}>
-      <div className="flex items-start gap-6 px-6 py-5">
+    <div
+      onClick={() => onSelect(activity)}
+      className={`bg-white rounded-xl overflow-hidden border-l-4 ${borderColor} cursor-pointer transition-all duration-200
+        ${isSelected
+          ? 'border border-[#2563EB] shadow-xl relative z-10 bg-blue-50'
+          : 'border border-slate-200 hover:shadow-md hover:bg-gray-100'
+        }`}
+    >
+      <div className="flex items-start gap-4 px-5 py-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-1">
-            <h3 className="text-sm font-semibold text-slate-800">{activity.title}</h3>
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-sm font-semibold text-slate-800">
+              {activity.title}
+            </h3>
             <button
-              onClick={() => onEdit(activity)}
+              onClick={e => { e.stopPropagation(); onEdit(activity); }}
               className="p-1 text-gray-400 hover:text-blue-700 rounded-full hover:bg-blue-100 transition-all duration-200"
               aria-label={`Editar actividad ${activity.title}`}
             >
-              <PencilIcon className="w-4 h-4" />
+              <PencilIcon className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => onDelete(activity)}
+              onClick={e => { e.stopPropagation(); onDelete(activity); }}
               className="p-1 text-gray-400 hover:text-red-700 rounded-full hover:bg-red-100 transition-all duration-200"
               aria-label={`Eliminar actividad ${activity.title}`}
             >
-              <TrashIcon className="w-4 h-4" />
+              <TrashIcon className="w-3.5 h-3.5" />
             </button>
           </div>
-          <p className="text-xs text-slate-400 leading-relaxed">{activity.description}</p>
+          <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">{activity.description}</p>
         </div>
-        <div className="flex items-center gap-6 flex-shrink-0">
+        <div className="flex items-center gap-4 flex-shrink-0">
           <div className="text-center">
-            <p className="text-xl font-semibold text-emerald-600 leading-none">{completedCount}</p>
-            <p className="text-xs text-slate-400 mt-1">Completaron</p>
+            <p className="text-lg font-semibold text-emerald-600 leading-none">{completedCount}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Completaron</p>
           </div>
-          <div className="w-px h-10 bg-slate-100"></div>
-          <div className="text-center">
-            <p className="text-xl font-semibold text-slate-400 leading-none">{pendingCount}</p>
-            <p className="text-xs text-slate-400 mt-1">Faltan</p>
-          </div>
-          <div className="w-px h-10 bg-slate-100"></div>
-          <div className="text-center min-w-[48px]">
-            <p className="text-xl font-semibold text-[#1e3a8a] leading-none">{percent}%</p>
-            <p className="text-xs text-slate-400 mt-1">Completado</p>
+          <div className="w-px h-8 bg-slate-100" />
+          <div className="text-center min-w-[44px]">
+            <p className={`text-lg font-semibold leading-none ${isSelected ? 'text-[#1e3a8a]' : 'text-[#1e3a8a]'}`}>{percent}%</p>
+            <p className="text-xs text-slate-400 mt-0.5">Progreso</p>
           </div>
         </div>
       </div>
-      <div className="px-6 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-4">
-        <div className="flex-1 bg-slate-200 rounded-full h-1.5 overflow-hidden">
-          <div className={`h-full rounded-full ${getProgressBarColor(percent)}`} style={{ width: `${percent}%` }}></div>
+      <div className="px-5 pb-3">
+        <div className="bg-slate-200 rounded-full h-1.5 overflow-hidden">
+          <div className={`h-full rounded-full ${getProgressBarColor(percent)}`} style={{ width: `${percent}%` }} />
         </div>
-        <button
-          onClick={() => onView(activity)}
-          className="text-xs text-[#1e3a8a] hover:underline font-medium whitespace-nowrap"
-        >
-          Ver progreso →
-        </button>
       </div>
     </div>
   );
 };
 
-const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack }) => {
+const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
   const [activities, setActivities] = useState<ActivityWithCompletions[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
 
-  const [activityToView, setActivityToView] = useState<ActivityWithCompletions | null>(null);
   const [activityToDelete, setActivityToDelete] = useState<Activity | null>(null);
   const [activityToEdit, setActivityToEdit] = useState<Activity | null>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -111,6 +111,11 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
   const [isDeleting, setIsDeleting] = useState(false);
 
   const { addToast } = useToast();
+
+  const selectedActivity = useMemo(
+    () => activities.find(a => a.id === selectedActivityId) ?? null,
+    [activities, selectedActivityId],
+  );
 
   useEffect(() => {
     if (activityToEdit) {
@@ -136,6 +141,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
           })
         );
         setActivities(activitiesWithCompletions);
+        setSelectedActivityId(prev => prev ?? (activitiesWithCompletions[0]?.id ?? null));
       })
       .catch(() => { if (!cancelled) addToast('Error al cargar las actividades.', 'error'); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -143,18 +149,17 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
   }, [plan.id]);
 
   const metrics = useMemo(() => {
-    const completed = activities.filter(a=>a.total_pending === 0).length;
-    const pending = activities.filter(a=>a.total_pending > 0).length;
+    const completed = activities.filter(a => a.total_pending === 0).length;
+    const pending = activities.filter(a => a.total_pending > 0).length;
     const total = activities.length;
     return { completed, pending, total };
   }, [activities]);
 
   const overallProgress = useMemo(() => {
     if (activities.length === 0) return 0;
-    
     const sum = activities.reduce((acc, a) => acc + (a.completion_percentage || 0), 0);
     return Math.round(sum / activities.length);
-}, [activities]);
+  }, [activities]);
 
   const getActivityMetrics = (activity: ActivityWithCompletions) => {
     const completedCount = activity.total_completed;
@@ -162,8 +167,6 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
     const percent = Math.round((completedCount / activities.length) * 100);
     return { completedCount, pendingCount, percent };
   };
-
-
 
   const handleAddActivity = async () => {
     if (!newTitle.trim() || !newDescription.trim()) {
@@ -177,11 +180,9 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
         title: newTitle.trim(),
         description: newDescription.trim(),
       });
-      const newActivity: ActivityWithCompletions = {
-        ...created,
-        completions: []
-      };
+      const newActivity: ActivityWithCompletions = { ...created, completions: [] };
       setActivities(prev => [...prev, newActivity]);
+      setSelectedActivityId(prev => prev ?? created.id);
       addToast('Actividad añadida con éxito.', 'success');
       closeAddDrawer();
     } catch {
@@ -218,7 +219,13 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
     setIsDeleting(true);
     try {
       await activityService.deleteActivity(activityToDelete.id);
-      setActivities(prev => prev.filter(a => a.id !== activityToDelete.id));
+      setActivities(prev => {
+        const next = prev.filter(a => a.id !== activityToDelete.id);
+        if (selectedActivityId === activityToDelete.id) {
+          setSelectedActivityId(next[0]?.id ?? null);
+        }
+        return next;
+      });
       addToast('Actividad eliminada correctamente.', 'success');
       setActivityToDelete(null);
     } catch {
@@ -253,6 +260,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
           Planes
         </button>
 
+        {/* Plan header */}
         <div className="bg-white border border-slate-200 rounded-xl p-7">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
             <div>
@@ -277,26 +285,12 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
               <div className={`${getBgColor(overallProgress)} rounded-lg px-4 py-2 min-w-[100px] text-center`}>
                 <div className={`text-2xl font-bold ${getTextColor(overallProgress)}`}>{overallProgress}%</div>
                 <div className={`text-xs ${getTextColor(overallProgress)}`}>Cumplimiento</div>
-              </div>              
-            </div>
-          </div>
-        </div>
-        {/*
-        <div className="bg-white border border-slate-200 rounded-xl px-7 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-slate-600 font-medium whitespace-nowrap">Progreso general</span>
-            <div className="flex-1 mx-4">
-              <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-                  style={{ width: `${overallProgress}%` }}
-                />
               </div>
             </div>
-            <span className="text-emerald-600 font-semibold whitespace-nowrap">{overallProgress}%</span>
           </div>
         </div>
-        */}
+
+        {/* Activities section */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Actividades</h4>
@@ -308,153 +302,176 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
               Añadir actividad
             </button>
           </div>
-          <div className="space-y-4">
-            {activities.length > 0 ? activities.map(activity => {
-              const { completedCount, pendingCount, percent } = getActivityMetrics(activity);
-              return (
-                <ActivityItem
-                  key={activity.id}
-                  activity={activity}
-                  completedCount={completedCount}
-                  pendingCount={pendingCount}
-                  percent={percent}
-                  onEdit={setActivityToEdit}
-                  onDelete={setActivityToDelete}
-                  onView={setActivityToView}
-                />
-              );
-            }) : (
-              <div className="text-center text-slate-500 p-8 bg-white border border-slate-200 rounded-xl">
-                <p>Este plan no tiene actividades aún.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-        {/* Drawer: añadir actividad */}
-        <Drawer isOpen={isAddOpen} onClose={closeAddDrawer} title="Añadir Actividad">
-          <div className="space-y-5">
-            <div>
-              <label htmlFor="newTitle" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-              <input
-                type="text"
-                id="newTitle"
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
-                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
-                placeholder="Ej: Recopilar datos de ventas del T1"
-              />
-            </div>
-            <div>
-              <label htmlFor="newDescription" className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-              <textarea
-                id="newDescription"
-                value={newDescription}
-                onChange={e => setNewDescription(e.target.value)}
-                rows={4}
-                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
-                placeholder="Describe los objetivos y detalles de la actividad..."
-              />
-            </div>
-          </div>
-          <div className="mt-8 flex justify-end gap-3 border-t pt-4">
-            <button onClick={closeAddDrawer} disabled={isAdding} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm disabled:opacity-70">Cancelar</button>
-            <button
-              onClick={handleAddActivity}
-              disabled={isAdding || !newTitle.trim() || !newDescription.trim()}
-              className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isAdding && <Spinner />}
-              {isAdding ? 'Añadiendo...' : 'Añadir'}
-            </button>
-          </div>
-        </Drawer>
 
-        {/* Drawer: editar actividad */}
-        <Drawer isOpen={activityToEdit !== null} onClose={() => setActivityToEdit(null)} title="Editar Actividad">
-          <div className="space-y-5">
-            <div>
-              <label htmlFor="editTitle" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
-              <input
-                type="text"
-                id="editTitle"
-                value={editTitle}
-                onChange={e => setEditTitle(e.target.value)}
-                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label htmlFor="editDescription" className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-              <textarea
-                id="editDescription"
-                value={editDescription}
-                onChange={e => setEditDescription(e.target.value)}
-                rows={4}
-                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
-              />
-            </div>
-          </div>
-          <div className="mt-8 flex justify-end gap-3 border-t pt-4">
-            <button onClick={() => setActivityToEdit(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">Cancelar</button>
-            <button
-              onClick={handleConfirmEditActivity}
-              disabled={isSavingEdit}
-              className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isSavingEdit && <Spinner />}
-              {isSavingEdit ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
-          </div>
-        </Drawer>
-
-        {/* Drawer: progreso de actividad */}
-        <Drawer
-          isOpen={activityToView !== null}
-          onClose={() => setActivityToView(null)}
-          title={`Progreso — ${activityToView?.title ?? ''}`}
-        >
-          {activityToView && activityToView.completions.length > 0 ? (
-            <div className="space-y-3">
-              {activityToView.completions.map(u => (
-                <div key={u.employeeId} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
-                  <div className="min-w-0">
-                    <p className="font-medium text-gray-800 text-sm">{u.employeeName}</p>
-                    {u.observations && (
-                      <p className="text-xs text-gray-500 mt-0.5 truncate">{u.observations}</p>
-                    )}
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {u.createdAt && formatDate(u.createdAt, { day: '2-digit', month: 'long', year: 'numeric' })}
-                    </p>
-                  </div>
-                  {u.evidenceUrl && (
-                    <a
-                      href={u.evidenceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-[#1e3a8a] font-medium hover:underline whitespace-nowrap"
-                    >
-                      Ver evidencia
-                    </a>
-                  )}
-                </div>
-              ))}
+          {activities.length === 0 ? (
+            <div className="text-center text-slate-500 p-8 bg-white border border-slate-200 rounded-xl">
+              <p>Este plan no tiene actividades aún.</p>
             </div>
           ) : (
-            <p className="text-center text-gray-400 py-10 text-sm">Ningún empleado ha completado esta actividad aún.</p>
-          )}
-        </Drawer>
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+              {/* Left: activity list */}
+              <div className="space-y-3">
+                {activities.map(activity => {
+                  const { completedCount, pendingCount, percent } = getActivityMetrics(activity);
+                  return (
+                    <ActivityItem
+                      key={activity.id}
+                      activity={activity}
+                      completedCount={completedCount}
+                      percent={percent}
+                      isSelected={selectedActivityId === activity.id}
+                      onEdit={setActivityToEdit}
+                      onDelete={setActivityToDelete}
+                      onSelect={a => setSelectedActivityId(a.id)}
+                    />
+                  );
+                })}
+              </div>
 
-        <ConfirmationModal
-          isOpen={activityToDelete !== null}
-          onClose={() => setActivityToDelete(null)}
-          onConfirm={handleConfirmDeleteActivity}
-          title="Confirmar Eliminación de Actividad"
-          confirmText="Eliminar"
-          isLoading={isDeleting}
-        >
-          <p>¿Estás seguro de que quieres eliminar <strong>"{activityToDelete?.title}"</strong>?</p>
-          <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>
-        </ConfirmationModal>       
+              {/* Right: progress panel */}
+              <div className="sticky top-4 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                {selectedActivity ? (() => {
+                  return (
+                    <>
+                      <div className="px-6 py-5">
+                        <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                          Empleados que completaron
+                        </h4>
+                        {selectedActivity.completions.length > 0 ? (
+                          <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                            {selectedActivity.completions.map(u => (
+                              <div
+                                key={u.employeeId}
+                                className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4"
+                              >
+                                <div className="min-w-0">
+                                  <p className="font-medium text-gray-800 text-sm">{u.employeeName}</p>
+                                  {u.observations && (
+                                    <p className="text-xs text-gray-500 mt-0.5 truncate">{u.observations}</p>
+                                  )}
+                                  <p className="text-xs text-gray-400 mt-0.5">
+                                    {u.createdAt && formatDate(u.createdAt, { day: '2-digit', month: 'long', year: 'numeric' })}
+                                  </p>
+                                </div>
+                                {u.evidenceUrl && (
+                                  <a
+                                    href={u.evidenceUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-[#1e3a8a] font-medium hover:underline whitespace-nowrap"
+                                  >
+                                    Ver evidencia
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-center text-gray-400 py-10 text-sm">
+                            Ningún empleado ha completado esta actividad aún.
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  );
+                })() : (
+                  <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                    <p className="text-sm">Selecciona una actividad para ver el progreso</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Drawer: añadir actividad */}
+      <Drawer isOpen={isAddOpen} onClose={closeAddDrawer} title="Añadir Actividad">
+        <div className="space-y-5">
+          <div>
+            <label htmlFor="newTitle" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+            <input
+              type="text"
+              id="newTitle"
+              value={newTitle}
+              onChange={e => setNewTitle(e.target.value)}
+              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+              placeholder="Ej: Recopilar datos de ventas del T1"
+            />
+          </div>
+          <div>
+            <label htmlFor="newDescription" className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <textarea
+              id="newDescription"
+              value={newDescription}
+              onChange={e => setNewDescription(e.target.value)}
+              rows={4}
+              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+              placeholder="Describe los objetivos y detalles de la actividad..."
+            />
+          </div>
+        </div>
+        <div className="mt-8 flex justify-end gap-3 border-t pt-4">
+          <button onClick={closeAddDrawer} disabled={isAdding} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm disabled:opacity-70">Cancelar</button>
+          <button
+            onClick={handleAddActivity}
+            disabled={isAdding || !newTitle.trim() || !newDescription.trim()}
+            className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isAdding && <Spinner />}
+            {isAdding ? 'Añadiendo...' : 'Añadir'}
+          </button>
+        </div>
+      </Drawer>
+
+      {/* Drawer: editar actividad */}
+      <Drawer isOpen={activityToEdit !== null} onClose={() => setActivityToEdit(null)} title="Editar Actividad">
+        <div className="space-y-5">
+          <div>
+            <label htmlFor="editTitle" className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+            <input
+              type="text"
+              id="editTitle"
+              value={editTitle}
+              onChange={e => setEditTitle(e.target.value)}
+              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+            />
+          </div>
+          <div>
+            <label htmlFor="editDescription" className="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+            <textarea
+              id="editDescription"
+              value={editDescription}
+              onChange={e => setEditDescription(e.target.value)}
+              rows={4}
+              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+            />
+          </div>
+        </div>
+        <div className="mt-8 flex justify-end gap-3 border-t pt-4">
+          <button onClick={() => setActivityToEdit(null)} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm">Cancelar</button>
+          <button
+            onClick={handleConfirmEditActivity}
+            disabled={isSavingEdit}
+            className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {isSavingEdit && <Spinner />}
+            {isSavingEdit ? 'Guardando...' : 'Guardar Cambios'}
+          </button>
+        </div>
+      </Drawer>
+
+      <ConfirmationModal
+        isOpen={activityToDelete !== null}
+        onClose={() => setActivityToDelete(null)}
+        onConfirm={handleConfirmDeleteActivity}
+        title="Confirmar Eliminación de Actividad"
+        confirmText="Eliminar"
+        isLoading={isDeleting}
+      >
+        <p>¿Estás seguro de que quieres eliminar <strong>"{activityToDelete?.title}"</strong>?</p>
+        <p className="mt-2 text-sm text-red-700">Esta acción no se puede deshacer.</p>
+      </ConfirmationModal>
     </>
   );
 };
