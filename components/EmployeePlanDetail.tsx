@@ -108,7 +108,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete }) => 
       </div>
       <div className="flex items-center gap-4 flex-shrink-0">
         {activity.completed ? (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full">
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full">
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M20 6L9 17l-5-5" />
             </svg>
@@ -150,12 +150,12 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete }) => 
           <span className="text-xs text-slate-400">Completada el <span className="text-slate-500">{formatDate(activity.completedAt)}</span></span>
         </div>
       ) : (
-        <div className="flex items-center gap-3 w-full">
-          <svg className="w-4 h-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <div className="flex justify-end items-center gap-3 w-full">
+          <svg className="hidden sm:inline w-4 h-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
             <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
           </svg>
-          <span className="text-xs text-slate-400 flex-1">Para completar esta actividad, pega el enlace de tu evidencia en Google Drive</span>
+          <span className="hidden sm:inline text-xs text-slate-400 flex-1">Para completar esta actividad, pega el enlace de tu evidencia en Google Drive</span>
           <button
             onClick={() => onComplete(activity)}
             className="inline-flex items-center gap-2 text-xs font-medium bg-[#1e3a8a] hover:bg-[#162d6e] text-white px-4 py-2 rounded-lg transition-colors"
