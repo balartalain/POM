@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plan, User } from '../types';
 import { ArrowLeftIcon, CheckCircleIcon, ClockIcon, LinkIcon, ExternalLinkIcon, UploadIcon } from './Icons';
 import { userService, UserActivity } from '../services/UserService';
+import { activityService } from '../services/ActivityService';
 import Drawer from './Drawer';
 import Spinner from './shared/Spinner';
 import { useToast } from '../hooks/useToast';
@@ -190,7 +191,7 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
     let cancelled = false;
     setLoading(true);
     setError(null);
-    userService.getUserActivities(employee.id, plan.id)
+    userService.getActivities(employee.id, plan.id)
       .then(data => { if (!cancelled) setActivities(data); })
       .catch(err => { if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar las actividades.'); })
       .finally(() => { if (!cancelled) setLoading(false); });
@@ -231,7 +232,7 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
     if (!activityToComplete || !evidenceUrl.trim()) return;
     setIsSubmitting(true);
     try {
-      const completion = await userService.completeActivity(
+      const completion = await activityService.complete(
         activityToComplete.id,
         employee.id,
         evidenceUrl.trim(),

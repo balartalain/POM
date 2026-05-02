@@ -4,8 +4,7 @@ import ConfirmationModal from './ConfirmationModal';
 import Drawer from './Drawer';
 import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon } from './Icons';
 import { useToast } from '../hooks/useToast';
-import { activityService } from '../services/ActivityService';
-import { userService, UserWithCompletion } from '../services/UserService';
+import { activityService, ActivityProgress } from '../services/ActivityService';
 import Spinner from './shared/Spinner';
 import { getProgressBarColor, getBorderColor, getTextColor, getBgColor } from '../utils/progressColor';
 import { formatDate } from '../utils/formatDate';
@@ -24,7 +23,7 @@ const MONTH_NAMES: Record<number, string> = {
 };
 
 interface ActivityWithCompletions extends Activity {
-  completions: UserWithCompletion[];
+  completions: ActivityProgress[];
 }
 
 interface ActivityItemProps {
@@ -129,7 +128,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
         const activitiesWithCompletions = await Promise.all(
           data.map(async (activity) => {
             try {
-              const completions = await userService.getUsersByActivity(activity.id);
+              const completions = await activityService.getActivityProgress(activity.id);
               return { ...activity, completions };
             } catch {
               return { ...activity, completions: [] };
@@ -417,19 +416,19 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, employees = [], onBack })
           {activityToView && activityToView.completions.length > 0 ? (
             <div className="space-y-3">
               {activityToView.completions.map(u => (
-                <div key={u.id} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
+                <div key={u.employeeId} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
                   <div className="min-w-0">
-                    <p className="font-medium text-gray-800 text-sm">{u.name}</p>
-                    {u.completion?.observations && (
-                      <p className="text-xs text-gray-500 mt-0.5 truncate">{u.completion.observations}</p>
+                    <p className="font-medium text-gray-800 text-sm">{u.employeeName}</p>
+                    {u.observations && (
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">{u.observations}</p>
                     )}
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {u.completion?.createdAt && formatDate(u.completion.createdAt, { day: '2-digit', month: 'long', year: 'numeric' })}
+                      {u.createdAt && formatDate(u.createdAt, { day: '2-digit', month: 'long', year: 'numeric' })}
                     </p>
                   </div>
-                  {u.completion?.evidenceUrl && (
+                  {u.evidenceUrl && (
                     <a
-                      href={u.completion.evidenceUrl}
+                      href={u.evidenceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-xs text-[#1e3a8a] font-medium hover:underline whitespace-nowrap"

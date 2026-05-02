@@ -34,10 +34,21 @@ const App: React.FC = () => {
 
   const handleLogin = useCallback(async (username: string): Promise<boolean> => {
     try {
-      const users = await userService.getUsers();
-      const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
-      if (user) {
-        setCurrentUser(user);
+      if (username.toLowerCase() === 'supervisor') {
+        setCurrentUser({
+          id: 1,
+          username: 'supervisor',
+          name: 'Supervisor',
+          role: Role.SUPERVISOR,
+        });
+        return true;
+      } else if (username.toLowerCase() === 'employee') {
+        setCurrentUser({
+          id: 2,
+          username: 'employee',
+          name: 'Employee',
+          role: Role.EMPLOYEE,
+        });
         return true;
       }
       return false;

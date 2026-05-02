@@ -1,6 +1,40 @@
 /// <reference types="vite/client" />
 import { Activity } from '../types';
 
+interface ApiActivityCompletion {
+  id: number;
+  activity_id: number;
+  evidence_url: string;
+  observations: string;
+  created_at: string;
+}
+
+export interface ActivityCompletion {
+  id: number;
+  activityId: number;
+  evidenceUrl: string;
+  observations: string;
+  createdAt: string;
+}
+
+interface ApiActivityProgress {
+  activity_id: number;
+  employee_id: number;
+  employee_name: string;
+  evidence_url: string;
+  observations: string;
+  created_at: string;
+}
+
+export interface ActivityProgress {
+  activityId: number;
+  employeeId: number;
+  employeeName: string;
+  evidenceUrl: string;
+  observations: string;
+  createdAt: string;
+}
+
 class ActivityService {
   private readonly baseUrl: string;
 
@@ -46,6 +80,44 @@ class ActivityService {
   /** DELETE /api/v1/actividades/{id}/ */
   async deleteActivity(id: number): Promise<void> {
     return this.request<void>(`/api/v1/actividades/${id}/`, { method: 'DELETE' });
+  }
+
+  /** GET /api/v1/actividades/{id}/progreso/ */
+  async getActivityProgress(activityId: number): Promise<ActivityProgress[]> {
+    const data = await this.request<ApiActivityProgress[]>(`/api/v1/actividades/${activityId}/progreso/`);
+    return data.map(d => ({
+      activityId: d.activity_id,
+      employeeId: d.employee_id,
+      employeeName: d.employee_name,
+      evidenceUrl: d.evidence_url,
+      observations: d.observations,
+      createdAt: d.created_at,
+    }));
+  }
+
+  /** POST /api/v1/actividades/completar/ */
+  async complete(
+    activityId: number,
+    employeeId: number,
+    evidenceUrl: string,
+    observations?: string
+  ): Promise<ActivityCompletion> {
+    const data = await this.request<ApiActivityCompletion>('/api/v1/actividades/completar/', {
+      method: 'POST',
+      body: JSON.stringify({
+        activity_id: activityId,
+        employee_id: employeeId,
+        evidence_url: evidenceUrl,
+        observations: observations || '',
+      }),
+    });
+    return {
+      id: data.id,
+      activityId: data.activity_id,
+      evidenceUrl: data.evidence_url,
+      observations: data.observations,
+      createdAt: data.created_at,
+    };
   }
 }
 

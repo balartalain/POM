@@ -103,7 +103,7 @@ const EmployeesView: React.FC = () => {
     if (!selectedPlanId) return;
     let cancelled = false;
     setLoadingEmployees(true);
-    userService.getUsersWithMetrics(selectedPlanId)
+    userService.getUsers(selectedPlanId)
       .then(users => {
         if (cancelled) return;
         const emps = users.filter(u => u.role === Role.EMPLOYEE);
@@ -120,7 +120,7 @@ const EmployeesView: React.FC = () => {
     if (!selectedEmpId || !selectedPlanId) return;
     let cancelled = false;
     setLoadingActivities(true);
-    userService.getUserActivities(selectedEmpId, selectedPlanId)
+    userService.getActivities(selectedEmpId, selectedPlanId)
       .then(acts => { if (!cancelled) setSelActs(acts); })
       .catch(() => { if (!cancelled) setSelActs([]); })
       .finally(() => { if (!cancelled) setLoadingActivities(false); });
