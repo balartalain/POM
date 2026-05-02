@@ -9,6 +9,7 @@ import UserLayout from './components/UserLayout';
 import Header from './components/Header';
 import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ToastContainer';
+import TailwindIndicator from './components/TailwindIndicator';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -82,6 +83,7 @@ const App: React.FC = () => {
   return (
     <ToastProvider>
       {renderContent}
+      <TailwindIndicator />
       <ToastContainer />
     </ToastProvider>
   );
