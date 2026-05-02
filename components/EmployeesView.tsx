@@ -169,23 +169,23 @@ const EmployeesView: React.FC = () => {
       style={{ minHeight: 'calc(100vh - 4rem)' }}
     >
       {/* Page subheader */}
-      <div className="px-8 py-4 bg-white border-b border-slate-200 flex items-center justify-between flex-shrink-0">
-        <h1 className="text-lg font-semibold text-slate-800">Empleados</h1>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-500 whitespace-nowrap">Año:</label>
+      <div className="px-4 lg:px-8 py-3 lg:py-4 bg-white border-b border-slate-200 flex items-center justify-between gap-3 flex-shrink-0">
+        <h1 className="hidden lg:block text-lg font-semibold text-slate-800 flex-1">Empleados</h1>
+        <div className="flex items-center gap-2 w-full lg:w-auto">
+          <div className="flex items-center gap-1.5 flex-1 lg:flex-none">
+            <label className="hidden sm:inline text-sm text-slate-500 whitespace-nowrap">Año:</label>
             <select
-              className="text-sm border border-slate-200 bg-white rounded-lg px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-900/20"
+              className="flex-1 lg:flex-none text-sm border border-slate-200 bg-white rounded-lg px-2 lg:px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-900/20"
               value={year}
               onChange={e => { setYear(Number(e.target.value)); setSelectedPlanId(null); setSelectedEmpId(null); setSelActs([]); }}
             >
               {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-500 whitespace-nowrap">Plan:</label>
+          <div className="flex items-center gap-1.5 flex-1 lg:flex-none">
+            <label className="hidden sm:inline text-sm text-slate-500 whitespace-nowrap">Plan:</label>
             <select
-              className="text-sm border border-slate-200 bg-white rounded-lg px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-900/20"
+              className="flex-1 lg:flex-none text-sm border border-slate-200 bg-white rounded-lg px-2 lg:px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-900/20"
               value={selectedPlanId ?? ''}
               onChange={e => setSelectedPlanId(Number(e.target.value))}
             >
@@ -212,7 +212,7 @@ const EmployeesView: React.FC = () => {
       {plans.length > 0 && (
         <>
           {/* ── Mobile: sliding panels (< md) ─────────────────────────────── */}
-          <div className="md:hidden flex-1 relative overflow-hidden">
+          <div className="lg:hidden flex-1 relative overflow-hidden">
 
             {/* Employee list — slides out to the left */}
             <div className={`absolute inset-0 flex flex-col bg-white transition-transform duration-300 ease-in-out ${showDetail ? '-translate-x-full' : 'translate-x-0'}`}>
@@ -347,7 +347,7 @@ const EmployeesView: React.FC = () => {
           </div>
 
           {/* ── Desktop: split panel (md+) ────────────────────────────────── */}
-          <div className="hidden md:flex flex-1 overflow-hidden">
+          <div className="hidden lg:flex flex-1 overflow-hidden">
 
             {/* Left: employee list */}
             <div className="w-80 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col overflow-hidden">
