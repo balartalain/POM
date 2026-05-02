@@ -72,7 +72,7 @@ const App: React.FC = () => {
           {currentUser.role === Role.SUPERVISOR ? (
             <SupervisorLayout supervisor={currentUser} />
           ) : (
-            <EmployeeDashboard employee={currentUser} />
+            <UserLayout employee={currentUser} />
           )}
         </main>
       </div>
