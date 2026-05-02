@@ -65,7 +65,6 @@ const App: React.FC = () => {
     if (!currentUser) {
       return <Login onLogin={handleLogin} />;
     }
-    debugger;
     return (
       <div className="min-h-screen bg-light-gray">
         <Header user={currentUser} onLogout={handleLogout} />

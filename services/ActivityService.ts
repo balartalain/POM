@@ -102,7 +102,7 @@ class ActivityService {
     evidenceUrl: string,
     observations?: string
   ): Promise<ActivityCompletion> {
-    const data = await this.request<ApiActivityCompletion>('/api/v1/actividades/completar/', {
+    const data = await this.request<ApiActivityCompletion>(`/api/v1/actividades/${activityId}/completar/`, {
       method: 'POST',
       body: JSON.stringify({
         activity_id: activityId,

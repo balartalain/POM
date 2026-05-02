@@ -28,8 +28,6 @@ interface ActivityWithCompletions extends Activity {
 
 interface ActivityItemProps {
   activity: ActivityWithCompletions;
-  completedCount: number;
-  percent: number;
   isSelected: boolean;
   onEdit: (activity: ActivityWithCompletions) => void;
   onDelete: (activity: ActivityWithCompletions) => void;
@@ -37,8 +35,10 @@ interface ActivityItemProps {
 }
 
 const ActivityItem: React.FC<ActivityItemProps> = ({
-  activity, completedCount, percent, isSelected, onEdit, onDelete, onSelect,
+  activity, isSelected, onEdit, onDelete, onSelect,
 }) => {
+  const completedCount = activity.total_completed;
+  const percent = activity.completion_percentage || 0;
   const borderColor = isSelected ? 'border-[#2563EB]' : getBorderColor(percent);
   return (
     <div
@@ -317,8 +317,6 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
                     <ActivityItem
                       key={activity.id}
                       activity={activity}
-                      completedCount={completedCount}
-                      percent={percent}
                       isSelected={selectedActivityId === activity.id}
                       onEdit={setActivityToEdit}
                       onDelete={setActivityToDelete}
