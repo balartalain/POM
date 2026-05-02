@@ -58,7 +58,11 @@ class UserService {
 
   private async request<T>(path: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, {
-      headers: { 'Content-Type': 'application/json', ...options?.headers },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(['POST', 'PATCH', 'PUT', 'DELETE'].includes((options?.method ?? 'GET').toUpperCase()) && { 'X-API-Key': 'T6rH5ZFWw-d_P88UUYZugUldurt4iP9sOca9_sSdGDg' }),
+        ...options?.headers,
+      },
       ...options,
     });
 
