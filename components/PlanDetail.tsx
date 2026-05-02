@@ -97,6 +97,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
   const [activities, setActivities] = useState<ActivityWithCompletions[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedActivityId, setSelectedActivityId] = useState<number | null>(null);
+  const [showCompletions, setShowCompletions] = useState(false);
 
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -304,57 +305,52 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
               <p>Este plan no tiene actividades aún.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
-              {/* Left: activity list */}
-              <div className="space-y-3">
-                {activities.map(activity => {
-                  const { completedCount, pendingCount, percent } = getActivityMetrics(activity);
-                  return (
+            <>
+              {/* ── Mobile: sliding panels (< xl) ─────────────────────── */}
+              <div className="xl:hidden relative overflow-hidden">
+                {/* Activities panel — slides out to the left */}
+                <div className={`space-y-3 transition-transform duration-300 ease-in-out ${showCompletions ? '-translate-x-full' : 'translate-x-0'}`}>
+                  {activities.map(activity => (
                     <ActivityItem
                       key={activity.id}
                       activity={activity}
                       isSelected={selectedActivityId === activity.id}
                       onEdit={setActivityToEdit}
                       onDelete={setActivityToDelete}
-                      onSelect={a => setSelectedActivityId(a.id)}
+                      onSelect={a => { setSelectedActivityId(a.id); setShowCompletions(true); }}
                     />
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
 
-              {/* Right: progress panel */}
-              <div className="sticky top-4 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                {selectedActivity ? (() => {
-                  return (
-                    <>
+                {/* Completions panel — slides in from the right */}
+                <div className={`absolute inset-0 overflow-y-auto transition-transform duration-300 ease-in-out ${showCompletions ? 'translate-x-0' : 'translate-x-full'}`}>
+                  <button
+                    onClick={() => setShowCompletions(false)}
+                    className="flex items-center gap-1.5 text-sm font-semibold text-[#1e3a8a] mb-4"
+                  >
+                    <ArrowLeftIcon className="w-4 h-4" />
+                    Actividades
+                  </button>
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    {selectedActivity ? (
                       <div className="px-6 py-5">
                         <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
                           Empleados que completaron
                         </h4>
                         {selectedActivity.completions.length > 0 ? (
-                          <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                          <div className="space-y-2">
                             {selectedActivity.completions.map(u => (
-                              <div
-                                key={u.employeeId}
-                                className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4"
-                              >
+                              <div key={u.employeeId} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
                                 <div className="min-w-0">
                                   <p className="font-medium text-gray-800 text-sm">{u.employeeName}</p>
                                   <p className="text-xs text-gray-400 mt-0.5">
                                     Completada el {formatDate(u.createdAt, { day: '2-digit', month: 'long', year: 'numeric' })}
                                   </p>
-                                  {u.observations && (
-                                    <p className="text-xs text-gray-500 mt-0.5 truncate">{u.observations}</p>
-                                  )}
-                                  
+                                  {u.observations && <p className="text-xs text-gray-500 mt-0.5 truncate">{u.observations}</p>}
                                 </div>
                                 {u.evidenceUrl && (
-                                  <a
-                                    href={u.evidenceUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-xs text-[#1e3a8a] font-medium hover:underline whitespace-nowrap"
-                                  >
+                                  <a href={u.evidenceUrl} target="_blank" rel="noopener noreferrer"
+                                     className="text-xs text-[#1e3a8a] font-medium hover:underline whitespace-nowrap">
                                     Ver evidencia
                                   </a>
                                 )}
@@ -367,15 +363,70 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
                           </p>
                         )}
                       </div>
-                    </>
-                  );
-                })() : (
-                  <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                    <p className="text-sm">Selecciona una actividad para ver el progreso</p>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                        <p className="text-sm">Selecciona una actividad para ver el progreso</p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
-            </div>
+
+              {/* ── Desktop: 2-col grid (xl+) ─────────────────────────── */}
+              <div className="hidden xl:grid grid-cols-2 gap-6 items-start">
+                <div className="space-y-3">
+                  {activities.map(activity => (
+                    <ActivityItem
+                      key={activity.id}
+                      activity={activity}
+                      isSelected={selectedActivityId === activity.id}
+                      onEdit={setActivityToEdit}
+                      onDelete={setActivityToDelete}
+                      onSelect={a => setSelectedActivityId(a.id)}
+                    />
+                  ))}
+                </div>
+
+                <div className="sticky top-4 bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                  {selectedActivity ? (
+                    <div className="px-6 py-5">
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">
+                        Empleados que completaron
+                      </h4>
+                      {selectedActivity.completions.length > 0 ? (
+                        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                          {selectedActivity.completions.map(u => (
+                            <div key={u.employeeId} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
+                              <div className="min-w-0">
+                                <p className="font-medium text-gray-800 text-sm">{u.employeeName}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                  Completada el {formatDate(u.createdAt, { day: '2-digit', month: 'long', year: 'numeric' })}
+                                </p>
+                                {u.observations && <p className="text-xs text-gray-500 mt-0.5 truncate">{u.observations}</p>}
+                              </div>
+                              {u.evidenceUrl && (
+                                <a href={u.evidenceUrl} target="_blank" rel="noopener noreferrer"
+                                   className="text-xs text-[#1e3a8a] font-medium hover:underline whitespace-nowrap">
+                                  Ver evidencia
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-center text-gray-400 py-10 text-sm">
+                          Ningún empleado ha completado esta actividad aún.
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                      <p className="text-sm">Selecciona una actividad para ver el progreso</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
