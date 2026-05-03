@@ -5,9 +5,9 @@ export const getProgressBarColor = (percent: number) => {
 };
 
 export const getBorderColor = (percent: number) => {
-  if (percent >= 70) return 'border-l-emerald-400';
-  if (percent >= 30) return 'border-l-amber-400';
-  return 'border-l-red-400';
+  if (percent >= 70) return 'border-l-emerald-500';
+  if (percent >= 30) return 'border-l-amber-500';
+  return 'border-l-red-500';
 };
 export const getTextColor = (percent: number) => {
   if (percent >= 70) return 'text-emerald-500';
