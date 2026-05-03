@@ -20,8 +20,7 @@ const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
           <div className="flex items-center space-x-4">
             <OnlineIndicator />
             <div className="text-right">
-              <p className="text-sm font-medium text-white">{user.name}</p>
-              <p className="text-xs text-indigo-200 capitalize">{user.role}</p>
+              <p className="text-sm font-medium text-white">{user.name}</p>              
             </div>
             <button
               onClick={onLogout}

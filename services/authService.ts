@@ -2,16 +2,13 @@ import { User, Role } from '../types';
 
 interface JwtPayload {
   user_id: number;
-  username: string;
-  first_name: string;
-  last_name: string;
-  role: string;
   exp: number;
 }
 
 interface TokenResponse {
   access: string;
   refresh: string;
+  user: User;
 }
 
 const BASE_URL: string = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
@@ -20,31 +17,22 @@ function decodePayload(token: string): JwtPayload {
   return JSON.parse(atob(token.split('.')[1])) as JwtPayload;
 }
 
-function payloadToUser(p: JwtPayload): User {
-  return {
-    id: p.user_id,
-    username: p.username,
-    name: `${p.first_name} ${p.last_name}`.trim() || p.username,
-    role: p.role === 'employee' ? Role.EMPLOYEE : Role.SUPERVISOR,
-  };
-}
-
 export async function loginWithGoogle(credential: string): Promise<User> {
   const response = await fetch(`${BASE_URL}/api/v1/auth/google/`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token: credential }),
+    body: JSON.stringify({ credential }),
   });
 
   if (!response.ok) {
     throw new Error('No se pudo autenticar con Google');
   }
 
-  const { access, refresh } = await response.json() as TokenResponse;
+  const { access, refresh, user } = await response.json() as TokenResponse;
   localStorage.setItem('access', access);
   localStorage.setItem('refresh', refresh);
-
-  return payloadToUser(decodePayload(access));
+  localStorage.setItem('user', JSON.stringify(user));
+  return user;
 }
 
 /**
@@ -59,7 +47,7 @@ export function getStoredUser(): User | null {
   try {
     const refreshPayload = decodePayload(refresh);
     if (refreshPayload.exp * 1000 < Date.now()) return null;
-    return payloadToUser(decodePayload(access));
+    return localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) as User : null;
   } catch {
     return null;
   }
@@ -68,4 +56,5 @@ export function getStoredUser(): User | null {
 export function logout(): void {
   localStorage.removeItem('access');
   localStorage.removeItem('refresh');
+  localStorage.removeItem('user');
 }
