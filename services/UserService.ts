@@ -60,7 +60,7 @@ class UserService {
     const response = await fetch(`${this.baseUrl}${path}`, {
       headers: {
         'Content-Type': 'application/json',
-        ...(['POST', 'PATCH', 'PUT', 'DELETE'].includes((options?.method ?? 'GET').toUpperCase()) && { 'X-API-Key': 'T6rH5ZFWw-d_P88UUYZugUldurt4iP9sOca9_sSdGDg' }),
+        'Authorization': `Bearer ${localStorage.getItem('access')}`,
         ...options?.headers,
       },
       ...options,
