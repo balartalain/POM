@@ -1,7 +1,6 @@
-/// <reference types="vite/client" />
 import { Plan } from '../types';
+import { request } from './apiClient';
 
-// Tipos que el API puede devolver (pueden diferir del tipo frontend)
 export interface ApiActivity {
   id: number;
   name: string;
@@ -24,34 +23,14 @@ export interface ApiPlan {
 }
 
 class PlanService {
-  private readonly baseUrl: string;
-
-  constructor() {
-    this.baseUrl = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
-  }
-
-  private async request<T>(path: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('access')}`, ...options?.headers },
-      ...options,
-    });
-
-    if (!response.ok) {
-      const message = await response.text().catch(() => response.statusText);
-      throw new Error(`[${response.status}] ${message}`);
-    }
-
-    return response.json() as Promise<T>;
-  }
-
   /** GET /api/v1/planes/?year={year} */
   async getPlans(year: number): Promise<Plan[]> {
-    return this.request<Plan[]>(`/api/v1/planes/?year=${year}`);
+    return request<Plan[]>(`/api/v1/planes/?year=${year}`);
   }
 
   /** POST /api/v1/planes/ */
   async createPlan(plan: Pick<Plan, 'title' | 'expiration_date' | 'supervisor_id'>): Promise<Plan> {
-    return this.request<Plan>('/api/v1/planes/', {
+    return request<Plan>('/api/v1/planes/', {
       method: 'POST',
       body: JSON.stringify(plan),
     });
@@ -59,7 +38,7 @@ class PlanService {
 
   /** PATCH /api/v1/planes/{id}/ */
   async updatePlan(id: number, plan: Partial<Plan>): Promise<Plan> {
-    return this.request<Plan>(`/api/v1/planes/${id}/`, {
+    return request<Plan>(`/api/v1/planes/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(plan),
     });
@@ -67,7 +46,7 @@ class PlanService {
 
   /** DELETE /api/v1/planes/{id}/ */
   async deletePlan(id: number): Promise<void> {
-    return this.request<void>(`/api/v1/planes/${id}/`, { method: 'DELETE' });
+    return request<void>(`/api/v1/planes/${id}/`, { method: 'DELETE' });
   }
 }
 

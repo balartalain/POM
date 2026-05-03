@@ -1,5 +1,5 @@
-/// <reference types="vite/client" />
 import { User, Role } from '../types';
+import { request } from './apiClient';
 
 interface ApiUser {
   id: number;
@@ -50,33 +50,9 @@ const mapApiUser = (u: ApiUser): User => ({
 });
 
 class UserService {
-  private readonly baseUrl: string;
-
-  constructor() {
-    this.baseUrl = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
-  }
-
-  private async request<T>(path: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('access')}`,
-        ...options?.headers,
-      },
-      ...options,
-    });
-
-    if (!response.ok) {
-      const message = await response.text().catch(() => response.statusText);
-      throw new Error(`[${response.status}] ${message}`);
-    }
-
-    return response.json() as Promise<T>;
-  }
-
   /** GET /api/v1/usuarios/?plan_id={planId} */
   async getUsers(planId: number): Promise<UserWithMetrics[]> {
-    const data = await this.request<ApiUserWithMetrics[]>(`/api/v1/usuarios/?plan_id=${planId}`);
+    const data = await request<ApiUserWithMetrics[]>(`/api/v1/usuarios/?plan_id=${planId}`);
     return data.map(u => ({
       ...mapApiUser(u),
       totalCompleted: u.total_completed,
@@ -87,7 +63,7 @@ class UserService {
 
   /** GET /api/v1/usuarios/{userId}/actividades/?plan_id={planId} */
   async getActivities(userId: number, planId: number): Promise<UserActivity[]> {
-    const data = await this.request<ApiUserActivity[]>(`/api/v1/usuarios/${userId}/actividades/?plan_id=${planId}`);   
+    const data = await request<ApiUserActivity[]>(`/api/v1/usuarios/${userId}/actividades/?plan_id=${planId}`);   
     return data.map(a => ({
       id: a.id,
       planId: a.plan_id,

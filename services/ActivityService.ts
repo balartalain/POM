@@ -1,5 +1,5 @@
-/// <reference types="vite/client" />
 import { Activity } from '../types';
+import { request } from './apiClient';
 
 interface ApiActivityCompletion {
   id: number;
@@ -36,38 +36,14 @@ export interface ActivityProgress {
 }
 
 class ActivityService {
-  private readonly baseUrl: string;
-
-  constructor() {
-    this.baseUrl = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
-  }
-
-  private async request<T>(path: string, options?: RequestInit): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('access')}`,
-        ...options?.headers,
-      },
-      ...options,
-    });
-
-    if (!response.ok) {
-      const message = await response.text().catch(() => response.statusText);
-      throw new Error(`[${response.status}] ${message}`);
-    }
-
-    return response.json() as Promise<T>;
-  }
-
   /** GET /api/v1/actividades/?plan_id={planId} */
   async getActivities(planId: number): Promise<Activity[]> {
-    return this.request<Activity[]>(`/api/v1/actividades/?plan_id=${planId}`);
+    return request<Activity[]>(`/api/v1/actividades/?plan_id=${planId}`);
   }
 
   /** POST /api/v1/actividades/ */
   async createActivity(activity: Omit<Activity, 'id'>): Promise<Activity> {
-    return this.request<Activity>('/api/v1/actividades/', {
+    return request<Activity>('/api/v1/actividades/', {
       method: 'POST',
       body: JSON.stringify(activity),
     });
@@ -75,7 +51,7 @@ class ActivityService {
 
   /** PATCH /api/v1/actividades/{id}/ */
   async updateActivity(id: number, activity: Omit<Activity, 'id'>): Promise<Activity> {
-    return this.request<Activity>(`/api/v1/actividades/${id}/`, {
+    return request<Activity>(`/api/v1/actividades/${id}/`, {
       method: 'PATCH',
       body: JSON.stringify(activity),
     });
@@ -83,12 +59,12 @@ class ActivityService {
 
   /** DELETE /api/v1/actividades/{id}/ */
   async deleteActivity(id: number): Promise<void> {
-    return this.request<void>(`/api/v1/actividades/${id}/`, { method: 'DELETE' });
+    return request<void>(`/api/v1/actividades/${id}/`, { method: 'DELETE' });
   }
 
   /** GET /api/v1/actividades/{id}/progreso/ */
   async getActivityProgress(activityId: number): Promise<ActivityProgress[]> {
-    const data = await this.request<ApiActivityProgress[]>(`/api/v1/actividades/${activityId}/progreso/`);
+    const data = await request<ApiActivityProgress[]>(`/api/v1/actividades/${activityId}/progreso/`);
     return data.map(d => ({
       activityId: d.activity_id,
       employeeId: d.employee_id,
@@ -106,7 +82,7 @@ class ActivityService {
     evidenceUrl: string,
     observations?: string
   ): Promise<ActivityCompletion> {
-    const data = await this.request<ApiActivityCompletion>(`/api/v1/actividades/${activityId}/completar/`, {
+    const data = await request<ApiActivityCompletion>(`/api/v1/actividades/${activityId}/completar/`, {
       method: 'POST',
       body: JSON.stringify({
         activity_id: activityId,
