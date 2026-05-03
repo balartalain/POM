@@ -2,6 +2,13 @@
 
 const BASE_URL: string = (import.meta.env.VITE_API_BASE_URL as string) ?? '';
 
+class SessionExpiredError extends Error {
+  constructor() {
+    super('Session expired');
+    this.name = 'SessionExpiredError';
+  }
+}
+
 function isExpired(token: string): boolean {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
@@ -12,24 +19,34 @@ function isExpired(token: string): boolean {
   }
 }
 
+let refreshPromise: Promise<void> | null = null;
+
 async function refreshAccessToken(): Promise<void> {
-  const refresh = localStorage.getItem('refresh');
-  if (!refresh) throw new Error('No refresh token');
+  if (refreshPromise) return refreshPromise;
 
-  const response = await fetch(`${BASE_URL}/api/v1/token/refresh/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refresh }),
-  });
+  refreshPromise = (async () => {
+    const refresh = localStorage.getItem('refresh');
+    if (!refresh) throw new SessionExpiredError();
 
-  if (!response.ok) {
-    localStorage.removeItem('access');
-    localStorage.removeItem('refresh');
-    throw new Error('Session expired');
-  }
+    const response = await fetch(`${BASE_URL}/api/v1/token/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh }),
+    });
 
-  const { access } = await response.json() as { access: string };
-  localStorage.setItem('access', access);
+    if (!response.ok) {
+      localStorage.removeItem('access');
+      localStorage.removeItem('refresh');
+      localStorage.removeItem('user');
+      window.dispatchEvent(new CustomEvent('session-expired'));
+      throw new SessionExpiredError();
+    }
+
+    const { access } = await response.json() as { access: string };
+    localStorage.setItem('access', access);
+  })().finally(() => { refreshPromise = null; });
+
+  return refreshPromise;
 }
 
 async function getValidToken(): Promise<string> {
@@ -41,7 +58,16 @@ async function getValidToken(): Promise<string> {
 }
 
 export async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = await getValidToken();
+  let token: string;
+  try {
+    token = await getValidToken();
+  } catch (err) {
+    if (err instanceof SessionExpiredError) {
+      // El evento ya disparó — dejar que el app redirija al login sin propagar el error
+      return new Promise<T>(() => {});
+    }
+    throw err;
+  }
 
   const response = await fetch(`${BASE_URL}${path}`, {
     ...options,

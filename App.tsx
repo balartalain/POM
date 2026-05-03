@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import Pusher from 'pusher-js';
 import { User, Role } from './types';
 import { loginWithGoogle, getStoredUser, logout } from './services/authService';
@@ -10,6 +10,24 @@ import Header from './components/Header';
 import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ToastContainer';
 import TailwindIndicator from './components/TailwindIndicator';
+import { useToast } from './hooks/useToast';
+
+const SessionExpiredListener: React.FC<{ onExpired: () => void }> = ({ onExpired }) => {
+  const { addToast } = useToast();
+  const onExpiredRef = useRef(onExpired);
+  onExpiredRef.current = onExpired;
+
+  useEffect(() => {
+    const handler = () => {
+      onExpiredRef.current();
+      addToast('Su sesión ha expirado', 'info');
+    };
+    window.addEventListener('session-expired', handler);
+    return () => window.removeEventListener('session-expired', handler);
+  }, [addToast]);
+
+  return null;
+};
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -66,6 +84,7 @@ const App: React.FC = () => {
 
   return (
     <ToastProvider>
+      <SessionExpiredListener onExpired={handleLogout} />
       {renderContent}
       <TailwindIndicator />
       <ToastContainer />
