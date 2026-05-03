@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Plan, User } from '../types';
 import { ArrowLeftIcon, CheckCircleIcon, ClockIcon, LinkIcon, ExternalLinkIcon, UploadIcon } from './Icons';
 import { userService, UserActivity } from '../services/UserService';
@@ -6,6 +6,7 @@ import { activityService } from '../services/ActivityService';
 import Drawer from './Drawer';
 import Spinner from './shared/Spinner';
 import { useToast } from '../hooks/useToast';
+import { useDataSync } from '../hooks/useDataSync';
 import { formatDate } from '../utils/formatDate';
 import { getProgressBarColor, getTextColor } from '@/utils/progressColor';
 
@@ -193,16 +194,18 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showUrlDrawer, setShowUrlDrawer] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const fetchActivities = useCallback(() => {
     setLoading(true);
     setError(null);
     userService.getActivities(employee.id, plan.id)
-      .then(data => { if (!cancelled) setActivities(data); })
-      .catch(err => { if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar las actividades.'); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .then(data => setActivities(data))
+      .catch(err => setError(err instanceof Error ? err.message : 'Error al cargar las actividades.'))
+      .finally(() => setLoading(false));
   }, [employee.id, plan.id]);
+
+  useEffect(() => { fetchActivities(); }, [fetchActivities]);
+
+  useDataSync(['UPDATE_ACTIVITIES', 'UPDATE_COMPLETIONS'], fetchActivities);
 
   const metrics = useMemo(() => {
     const completed = activities.filter(a => a.completed).length;

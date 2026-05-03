@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { User, Plan } from '../types';
 import { planService } from '../services/PlanService';
 import PlanCard from './PlanCard';
 import EmployeePlanDetail from './EmployeePlanDetail';
 import Spinner from './shared/Spinner';
+import { useDataSync } from '../hooks/useDataSync';
 
 interface UserLayoutProps {
   employee: User;
@@ -23,16 +24,18 @@ const UserLayout: React.FC<UserLayoutProps> = ({ employee }) => {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  useEffect(() => {
-    let cancelled = false;
+  const fetchPlans = useCallback(() => {
     setLoading(true);
     setError(null);
     planService.getPlans(selectedYear)
-      .then(data => { if (!cancelled) setPlans(data); })
-      .catch(err => { if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar los planes.'); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .then(data => setPlans(data))
+      .catch(err => setError(err instanceof Error ? err.message : 'Error al cargar los planes.'))
+      .finally(() => setLoading(false));
   }, [selectedYear]);
+
+  useEffect(() => { fetchPlans(); }, [fetchPlans]);
+
+  useDataSync('UPDATE_PLANS', fetchPlans);
 
   const plansByMonth = useMemo(() =>
     [...plans]

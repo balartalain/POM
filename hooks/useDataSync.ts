@@ -1,3 +1,4 @@
+import { debug } from 'console';
 import { useEffect, useRef } from 'react';
 
 export type DataUpdateType = 'UPDATE_PLANS' | 'UPDATE_ACTIVITIES' | 'UPDATE_COMPLETIONS';
@@ -20,6 +21,7 @@ export function useDataSync(
     const watched = Array.isArray(types) ? types : [types];
 
     const handler = (event: Event) => {
+      debugger;
       const { type } = (event as CustomEvent<{ type: DataUpdateType }>).detail;
       if (watched.includes(type)) callbackRef.current();
     };

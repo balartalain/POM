@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { request } from '../services/apiClient';
 
 const VAPID_PUBLIC_KEY = 'BG_yvHrLJk0_dihF253nkBhnIljre6DmaBpgtkpj9cKAOvk-OmxpzkHxhhUxkTxrtZgOTNKTrvzJf0dHpiGDnA0';
+const PUSH_USER_KEY = 'pame_push_user_id';
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -11,15 +12,23 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 }
 
 export function usePushNotifications() {
-  const subscribe = useCallback(async (): Promise<void> => {
+  const subscribe = useCallback(async (userId: number): Promise<void> => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
 
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') return;
 
     const registration = await navigator.serviceWorker.ready;
-    let subscription = await registration.pushManager.getSubscription();
 
+    // Si el usuario cambió respecto al último login, forzar nuevo endpoint
+    // para que el backend no asocie la suscripción al usuario equivocado.
+    const storedUserId = localStorage.getItem(PUSH_USER_KEY);
+    if (storedUserId && storedUserId !== String(userId)) {
+      const existing = await registration.pushManager.getSubscription();
+      if (existing) await existing.unsubscribe();
+    }
+
+    let subscription = await registration.pushManager.getSubscription();
     if (!subscription) {
       subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
@@ -31,9 +40,27 @@ export function usePushNotifications() {
       method: 'POST',
       body: JSON.stringify(subscription.toJSON()),
     });
+
+    localStorage.setItem(PUSH_USER_KEY, String(userId));
   }, []);
 
-  // Lee los pending updates del service worker y los borra
+  const unsubscribePush = useCallback(async (): Promise<void> => {
+    if (!('serviceWorker' in navigator)) return;
+
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+
+    if (subscription) {
+      await request(
+        `/api/v1/push/subscribe/?endpoint=${encodeURIComponent(subscription.endpoint)}`,
+        { method: 'DELETE' }
+      ).catch(() => {});
+      await subscription.unsubscribe();
+    }
+
+    localStorage.removeItem(PUSH_USER_KEY);
+  }, []);
+
   const getPendingUpdates = useCallback(async (): Promise<string[]> => {
     if (!('serviceWorker' in navigator)) return [];
 
@@ -52,5 +79,5 @@ export function usePushNotifications() {
     });
   }, []);
 
-  return { subscribe, getPendingUpdates };
+  return { subscribe, unsubscribePush, getPendingUpdates };
 }

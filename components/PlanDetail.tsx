@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Plan, Activity, User } from '../types';
 import ConfirmationModal from './ConfirmationModal';
 import Drawer from './Drawer';
 import { ArrowLeftIcon, PlusIcon, PencilIcon, TrashIcon } from './Icons';
 import { useToast } from '../hooks/useToast';
+import { useDataSync } from '../hooks/useDataSync';
 import { activityService, ActivityProgress } from '../services/ActivityService';
 import Spinner from './shared/Spinner';
 import { getProgressBarColor, getBorderColor, getTextColor, getBgColor } from '../utils/progressColor';
@@ -125,12 +126,10 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
     }
   }, [activityToEdit]);
 
-  useEffect(() => {
-    let cancelled = false;
+  const fetchActivities = useCallback(() => {
     setLoading(true);
     activityService.getActivities(plan.id)
       .then(async data => {
-        if (cancelled) return;
         const activitiesWithCompletions = await Promise.all(
           data.map(async (activity) => {
             try {
@@ -144,10 +143,13 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
         setActivities(activitiesWithCompletions);
         setSelectedActivityId(prev => prev ?? (activitiesWithCompletions[0]?.id ?? null));
       })
-      .catch(() => { if (!cancelled) addToast('Error al cargar las actividades.', 'error'); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [plan.id]);
+      .catch(() => addToast('Error al cargar las actividades.', 'error'))
+      .finally(() => setLoading(false));
+  }, [plan.id, addToast]);
+
+  useEffect(() => { fetchActivities(); }, [fetchActivities]);
+
+  useDataSync(['UPDATE_ACTIVITIES', 'UPDATE_COMPLETIONS'], fetchActivities);
 
   const metrics = useMemo(() => {
     const completed = activities.filter(a => a.total_pending === 0).length;

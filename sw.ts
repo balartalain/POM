@@ -1,3 +1,4 @@
+/// <reference lib="webworker" />
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
 
@@ -33,7 +34,7 @@ async function clearPending(): Promise<void> {
 }
 
 // Recibe notificaciones push del backend (funciona aunque la app esté cerrada)
-self.addEventListener('push', (event) => {
+self.addEventListener('push', (event: PushEvent) => {
   if (!event.data) return;
 
   let payload: { type: string; title?: string; body?: string };
@@ -46,44 +47,34 @@ self.addEventListener('push', (event) => {
   const { type, title = 'PAME', body = 'Hay datos actualizados disponibles' } = payload;
 
   event.waitUntil(
-    clients.matchAll({ type: 'window' }).then((windowClients) => {
-      const appIsOpen = windowClients.length > 0;
-
-      // Siempre almacena el pending update para que React lo consuma al abrirse
-      const store = addPending(type);
-
-      // Solo muestra notificación nativa si la app no está abierta
-      if (appIsOpen) return store;
-
-      return Promise.all([
-        store,
-        self.registration.showNotification(title, {
-          body,
-          icon: '/icon-192.png',
-          badge: '/icon-192.png',
-          tag: type,
-          data: { type },
-        }),
-      ]);
-    })
+    Promise.all([
+      addPending(type),
+      self.registration.showNotification(title, {
+        body,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        tag: type,
+        data: { type },
+      }),
+    ])
   );
 });
 
 // Al hacer click en la notificación, abre o enfoca la app
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if ('focus' in client) return client.focus();
+        if ('focus' in client) return (client as WindowClient).focus();
       }
-      return clients.openWindow('/');
+      return self.clients.openWindow('/');
     })
   );
 });
 
 // Mensajes desde React
-self.addEventListener('message', (event) => {
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
   if (event.data?.type === 'SKIP_WAITING') {
     self.skipWaiting();
     return;

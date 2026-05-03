@@ -1,6 +1,5 @@
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import Pusher from 'pusher-js';
 import { User, Role } from './types';
 import { loginWithGoogle, getStoredUser, logout } from './services/authService';
 import Login from './components/Login';
@@ -35,13 +34,6 @@ const SessionExpiredListener: React.FC<{ onExpired: () => void }> = ({ onExpired
 
 // ─── Notificaciones en tiempo real ──────────────────────────────────────────
 
-type UpdateMeta = { title: string; body: string };
-
-const UPDATE_META: Record<DataUpdateType, UpdateMeta> = {
-  UPDATE_PLANS:      { title: 'Planes actualizados',      body: 'Hay cambios en los planes disponibles.' },
-  UPDATE_ACTIVITIES: { title: 'Actividades actualizadas', body: 'Hay cambios en las actividades disponibles.' },
-  UPDATE_COMPLETIONS:{ title: 'Completados actualizados', body: 'Hay cambios en los completados disponibles.' },
-};
 
 function dispatch(type: DataUpdateType) {
   window.dispatchEvent(new CustomEvent('pame:data-update', { detail: { type } }));
@@ -49,12 +41,21 @@ function dispatch(type: DataUpdateType) {
 
 const RealtimeListener: React.FC<{ user: User }> = ({ user }) => {
   const { addToast } = useToast();
-  const { subscribe, getPendingUpdates } = usePushNotifications();
+  const { subscribe, unsubscribePush, getPendingUpdates } = usePushNotifications();
 
-  // Solicita permiso push y registra la suscripción al hacer login
+  // Solicita permiso push y registra la suscripción al hacer login.
+  // Pasa el userId para detectar cambio de usuario y forzar nuevo endpoint.
   useEffect(() => {
-    subscribe().catch(() => {});
+    subscribe(user.id).catch(() => {});
   }, [user, subscribe]);
+
+  // Al hacer logout, desuscribir del push para que el siguiente usuario
+  // arranque con su propio endpoint limpio.
+  useEffect(() => {
+    const handler = () => { unsubscribePush().catch(() => {}); };
+    window.addEventListener('pame:logout', handler);
+    return () => window.removeEventListener('pame:logout', handler);
+  }, [unsubscribePush]);
 
   // Comprueba pending updates: al montar, al ganar foco y al volver a ser visible
   const checkPending = useCallback(async () => {
@@ -75,22 +76,22 @@ const RealtimeListener: React.FC<{ user: User }> = ({ user }) => {
   }, [checkPending]);
 
   // Pusher: notificaciones en tiempo real cuando la app está activa
-  useEffect(() => {
-    const pusher = new Pusher('b23e7b8bf6ab3b8b19ff', { cluster: 'us2' });
-    const channel = pusher.subscribe('pame');
-
-    const handleUpdate = (type: DataUpdateType) => {
-      const meta = UPDATE_META[type];
-      addToast(meta.body, 'info');
-      dispatch(type);
-    };
-
-    channel.bind('UPDATE_PLANS',       () => handleUpdate('UPDATE_PLANS'));
-    channel.bind('UPDATE_ACTIVITIES',  () => handleUpdate('UPDATE_ACTIVITIES'));
-    channel.bind('UPDATE_COMPLETIONS', () => handleUpdate('UPDATE_COMPLETIONS'));
-
-    return () => { pusher.disconnect(); };
-  }, [user, addToast]);
+  // useEffect(() => {
+  //   const pusher = new Pusher('b23e7b8bf6ab3b8b19ff', { cluster: 'us2' });
+  //   const channel = pusher.subscribe('pame');
+  //
+  //   const handleUpdate = (type: DataUpdateType) => {
+  //     const meta = UPDATE_META[type];
+  //     addToast(meta.body, 'info');
+  //     dispatch(type);
+  //   };
+  //
+  //   channel.bind('UPDATE_PLANS',       () => handleUpdate('UPDATE_PLANS'));
+  //   channel.bind('UPDATE_ACTIVITIES',  () => handleUpdate('UPDATE_ACTIVITIES'));
+  //   channel.bind('UPDATE_COMPLETIONS', () => handleUpdate('UPDATE_COMPLETIONS'));
+  //
+  //   return () => { pusher.disconnect(); };
+  // }, [user, addToast]);
 
   return null;
 };
@@ -113,6 +114,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleLogout = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('pame:logout'));
     logout();
     setCurrentUser(null);
   }, []);

@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { User, Plan } from '../types';
 import { planService } from '../services/PlanService';
 import ConfirmationModal from './ConfirmationModal';
@@ -9,6 +9,7 @@ import Spinner from './shared/Spinner';
 import PlanCard from './PlanCard';
 import PlanDetail from './PlanDetail';
 import { useToast } from '../hooks/useToast';
+import { useDataSync } from '../hooks/useDataSync';
 
 interface SupervisorDashboardProps {
   supervisor: User;
@@ -40,16 +41,18 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
 
   const { addToast } = useToast();
 
-  useEffect(() => {
-    let cancelled = false;
+  const fetchPlans = useCallback(() => {
     setLoading(true);
     setError(null);
     planService.getPlans(selectedYear)
-      .then(data => { if (!cancelled) setPlans(data); })
-      .catch(err => { if (!cancelled) setError(err instanceof Error ? err.message : 'Error al cargar los planes.'); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .then(data => setPlans(data))
+      .catch(err => setError(err instanceof Error ? err.message : 'Error al cargar los planes.'))
+      .finally(() => setLoading(false));
   }, [selectedYear]);
+
+  useEffect(() => { fetchPlans(); }, [fetchPlans]);
+
+  useDataSync('UPDATE_PLANS', fetchPlans);
 
   const filteredPlans = useMemo(() =>
     [...plans].sort((a, b) => b.month - a.month || new Date(b.expiration_date).getTime() - new Date(a.expiration_date).getTime()),
