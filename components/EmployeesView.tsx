@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Role, Plan } from '../types';
+import { Plan } from '../types';
 import { userService, UserActivity, UserWithMetrics } from '../services/UserService';
 import { planService } from '../services/PlanService';
 import Spinner from './shared/Spinner';
@@ -113,7 +113,7 @@ const EmployeesView: React.FC = () => {
     userService.getUsers(selectedPlanId)
       .then(users => {
         if (cancelled) return;
-        const emps = users.filter(u => u.role === Role.EMPLOYEE);
+        const emps = users.filter(u => u.role === 'employee');
         setEmployees(emps);
         setSelectedEmpId(prev => prev ?? (emps.length > 0 ? emps[0].id : null));
       })
@@ -143,8 +143,8 @@ const EmployeesView: React.FC = () => {
     const term = search.trim().toLowerCase();
     if (!term) return employees;
 
-    return employees.filter(e => 
-      e.name.toLowerCase().includes(term) || 
+    return employees.filter(e =>
+      `${e.first_name} ${e.last_name}`.toLowerCase().includes(term) ||
       e.username.toLowerCase().includes(term)
     );
   },
@@ -232,9 +232,9 @@ const EmployeesView: React.FC = () => {
                 {loadingEmployees ? (
                   <div className="flex justify-center py-8"><Spinner className="h-5 w-5 text-slate-400" /></div>
                 ) : filteredEmployees.map(emp => {
-                  const pct   = emp.completedPercentage;
-                  const done  = emp.totalCompleted;
-                  const total = emp.totalCompleted + emp.totalPending;
+                  const pct   = emp.completed_percentage;
+                  const done  = emp.total_completed;
+                  const total = emp.total_completed + emp.total_pending;
                   return (
                     <div
                       key={emp.id}
@@ -243,10 +243,10 @@ const EmployeesView: React.FC = () => {
                     >
                       <div className="flex items-center gap-3 mb-2.5">
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(pct)}`}>
-                          {getInitials(emp.name || emp.username)}
+                          {getInitials(`${emp.first_name} ${emp.last_name}`.trim() || emp.username)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-800 truncate">{emp.name}</p>
+                          <p className="text-sm font-medium text-slate-800 truncate">{`${emp.first_name} ${emp.last_name}`.trim()}</p>
                           <p className="text-xs text-slate-400 truncate">{emp.username}</p>
                         </div>
                         <span className={`text-xs font-bold flex-shrink-0 ${getTextColor(pct)}`}>{pct}%</span>
@@ -279,10 +279,10 @@ const EmployeesView: React.FC = () => {
                     <div className="bg-white border border-slate-200 rounded-xl px-4 py-4">
                       <div className="flex items-center gap-3 mb-3">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${getAvatarColor(selPct)}`}>
-                          {getInitials(selectedEmployee.name || selectedEmployee.username)}
+                          {getInitials(`${selectedEmployee.first_name} ${selectedEmployee.last_name}`.trim() || selectedEmployee.username)}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-slate-800">{selectedEmployee.name || selectedEmployee.username}</p>
+                          <p className="text-sm font-semibold text-slate-800">{`${selectedEmployee.first_name} ${selectedEmployee.last_name}`.trim() || selectedEmployee.username}</p>
                           <p className="text-xs text-slate-400">{selectedPlan.title} · {planLabel(selectedPlan)}</p>
                         </div>
                       </div>
@@ -318,14 +318,14 @@ const EmployeesView: React.FC = () => {
                               <div className="flex-1 min-w-0">
                                 <p className={`text-sm font-medium ${act.completed ? 'text-slate-800' : 'text-slate-500'}`}>{act.title}</p>
                                 {act.completed ? (
-                                  <p className="text-xs text-slate-400 mt-0.5">Completada el {act.completedAt ? formatDate(act.completedAt) : '—'}</p>
+                                  <p className="text-xs text-slate-400 mt-0.5">Completada el {act.completed_at ? formatDate(act.completed_at) : '—'}</p>
                                 ) : (
                                   <p className="text-xs text-amber-400 mt-0.5">Pendiente</p>
                                 )}
                               </div>
                               {act.completed ? (
-                                act.evidenceUrl ? (
-                                  <a href={act.evidenceUrl} target="_blank" rel="noopener noreferrer"
+                                act.evidence_url ? (
+                                  <a href={act.evidence_url} target="_blank" rel="noopener noreferrer"
                                      className="text-xs text-blue-600 hover:underline flex items-center gap-1 flex-shrink-0">
                                     <ExternalIcon />Ver evidencia
                                   </a>
@@ -368,9 +368,9 @@ const EmployeesView: React.FC = () => {
                   <div className="flex justify-center py-8"><Spinner className="h-5 w-5 text-slate-400" /></div>
                 ) : filteredEmployees.map(emp => {
                   const selected = emp.id === selectedEmpId;
-                  const pct      = emp.completedPercentage;
-                  const done     = emp.totalCompleted;
-                  const total    = emp.totalCompleted + emp.totalPending;
+                  const pct      = emp.completed_percentage;
+                  const done     = emp.total_completed;
+                  const total    = emp.total_completed + emp.total_pending;
                   return (
                     <div
                       key={emp.id}
@@ -379,10 +379,10 @@ const EmployeesView: React.FC = () => {
                     >
                       <div className="flex items-center gap-3 mb-2.5">
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0 ${getAvatarColor(pct)}`}>
-                          {getInitials(emp.name || emp.username)}
+                          {getInitials(`${emp.first_name} ${emp.last_name}`.trim() || emp.username)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm font-medium emp-name truncate ${selected ? 'text-[#1e3a8a]' : 'text-slate-800'}`}>{emp.name}</p>
+                          <p className={`text-sm font-medium emp-name truncate ${selected ? 'text-[#1e3a8a]' : 'text-slate-800'}`}>{`${emp.first_name} ${emp.last_name}`.trim()}</p>
                           <p className="text-xs text-slate-400 truncate">{emp.username}</p>
                         </div>
                         <span className={`text-xs font-bold flex-shrink-0 ${getTextColor(pct)}`}>{pct}%</span>
@@ -410,10 +410,10 @@ const EmployeesView: React.FC = () => {
                   <div className="bg-white border border-slate-200 rounded-xl px-6 py-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-semibold flex-shrink-0 ${getAvatarColor(selPct)}`}>
-                        {getInitials(selectedEmployee.name || selectedEmployee.username)}
+                        {getInitials(`${selectedEmployee.first_name} ${selectedEmployee.last_name}`.trim() || selectedEmployee.username)}
                       </div>
                       <div>
-                        <p className="text-base font-semibold text-slate-800">{selectedEmployee.name || selectedEmployee.username}</p>
+                        <p className="text-base font-semibold text-slate-800">{`${selectedEmployee.first_name} ${selectedEmployee.last_name}`.trim() || selectedEmployee.username}</p>
                         <p className="text-xs text-slate-400">{selectedPlan.title} · {planLabel(selectedPlan)}</p>
                       </div>
                     </div>
@@ -449,14 +449,14 @@ const EmployeesView: React.FC = () => {
                             <div className="flex-1">
                               <p className={`text-sm font-medium ${act.completed ? 'text-slate-800' : 'text-slate-500'}`}>{act.title}</p>
                               {act.completed ? (
-                                <p className="text-xs text-slate-400 mt-0.5">Completada el {act.completedAt ? formatDate(act.completedAt) : '—'}</p>
+                                <p className="text-xs text-slate-400 mt-0.5">Completada el {act.completed_at ? formatDate(act.completed_at) : '—'}</p>
                               ) : (
                                 <p className="text-xs text-amber-400 mt-0.5">Pendiente</p>
                               )}
                             </div>
                             {act.completed ? (
-                              act.evidenceUrl ? (
-                                <a href={act.evidenceUrl} target="_blank" rel="noopener noreferrer"
+                              act.evidence_url ? (
+                                <a href={act.evidence_url} target="_blank" rel="noopener noreferrer"
                                    className="text-xs text-blue-600 hover:underline flex items-center gap-1 flex-shrink-0">
                                   <ExternalIcon />Ver evidencia
                                 </a>

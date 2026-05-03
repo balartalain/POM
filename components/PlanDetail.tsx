@@ -340,16 +340,16 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
                         {selectedActivity.completions.length > 0 ? (
                           <div className="space-y-2">
                             {selectedActivity.completions.map(u => (
-                              <div key={u.employeeId} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
+                              <div key={u.employee_id} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
                                 <div className="min-w-0">
-                                  <p className="font-medium text-gray-800 text-sm">{u.employeeName}</p>
+                                  <p className="font-medium text-gray-800 text-sm">{u.employee_name}</p>
                                   <p className="text-xs text-gray-400 mt-0.5">
-                                    Completada el {formatDate(u.createdAt, { day: '2-digit', month: 'long', year: 'numeric' })}
+                                    Completada el {formatDate(u.created_at, { day: '2-digit', month: 'long', year: 'numeric' })}
                                   </p>
                                   {u.observations && <p className="text-xs text-gray-500 mt-0.5 truncate">{u.observations}</p>}
                                 </div>
-                                {u.evidenceUrl && (
-                                  <a href={u.evidenceUrl} target="_blank" rel="noopener noreferrer"
+                                {u.evidence_url && (
+                                  <a href={u.evidence_url} target="_blank" rel="noopener noreferrer"
                                      className="text-xs text-[#1e3a8a] font-medium hover:underline whitespace-nowrap">
                                     Ver evidencia
                                   </a>
@@ -396,16 +396,16 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
                       {selectedActivity.completions.length > 0 ? (
                         <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                           {selectedActivity.completions.map(u => (
-                            <div key={u.employeeId} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
+                            <div key={u.employee_id} className="flex items-start justify-between p-3 rounded-lg bg-gray-50 border border-gray-100 gap-4">
                               <div className="min-w-0">
-                                <p className="font-medium text-gray-800 text-sm">{u.employeeName}</p>
+                                <p className="font-medium text-gray-800 text-sm">{u.employee_name}</p>
                                 <p className="text-xs text-gray-400 mt-0.5">
-                                  Completada el {formatDate(u.createdAt, { day: '2-digit', month: 'long', year: 'numeric' })}
+                                  Completada el {formatDate(u.created_at, { day: '2-digit', month: 'long', year: 'numeric' })}
                                 </p>
                                 {u.observations && <p className="text-xs text-gray-500 mt-0.5 truncate">{u.observations}</p>}
                               </div>
-                              {u.evidenceUrl && (
-                                <a href={u.evidenceUrl} target="_blank" rel="noopener noreferrer"
+                              {u.evidence_url && (
+                                <a href={u.evidence_url} target="_blank" rel="noopener noreferrer"
                                    className="text-xs text-[#1e3a8a] font-medium hover:underline whitespace-nowrap">
                                   Ver evidencia
                                 </a>

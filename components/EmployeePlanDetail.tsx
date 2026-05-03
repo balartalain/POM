@@ -124,9 +124,9 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete }) => 
             Pendiente
           </span>
         )}
-        {activity.completed && activity.evidenceUrl && (
+        {activity.completed && activity.evidence_url && (
           <a
-            href={activity.evidenceUrl}
+            href={activity.evidence_url}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
@@ -149,7 +149,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete }) => 
               <circle cx="12" cy="12" r="10" />
               <path d="M12 6v6l4 2" />
             </svg>
-            <span className="text-xs text-slate-400">Completada el <span className="text-slate-500">{formatDate(activity.completedAt)}</span></span>
+            <span className="text-xs text-slate-400">Completada el <span className="text-slate-500">{formatDate(activity.completed_at)}</span></span>
           </div>
           {activity.observations && (
             <p className="text-xs text-slate-500 italic">{activity.observations}</p>
@@ -244,14 +244,8 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
         evidenceUrl.trim(),
         evidenceObservations.trim() || undefined
       );
-      debugger;
-      setActivities(prev => prev.map(a => 
-        a.id === activityToComplete.id 
-          ? { 
-              ...a, 
-              ...completion
-            }
-          : a
+      setActivities(prev => prev.map(a =>
+        a.id === activityToComplete.id ? { ...a, ...completion } : a
       ));
       addToast('Actividad completada con éxito.', 'success');
       closeDrawer();
