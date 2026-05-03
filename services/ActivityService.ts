@@ -6,15 +6,15 @@ interface ApiActivityCompletion {
   activity_id: number;
   evidence_url: string;
   observations: string;
-  created_at: string;
+  completed_at: string;
 }
 
 export interface ActivityCompletion {
   id: number;
-  activityId: number;
   evidenceUrl: string;
   observations: string;
-  createdAt: string;
+  completedAt: string;
+  completed: boolean;
 }
 
 interface ApiActivityProgress {
@@ -93,10 +93,10 @@ class ActivityService {
     });
     return {
       id: data.id,
-      activityId: data.activity_id,
+      completed: true,
       evidenceUrl: data.evidence_url,
       observations: data.observations,
-      createdAt: data.created_at,
+      completedAt: data.completed_at,
     };
   }
 }

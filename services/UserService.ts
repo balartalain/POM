@@ -18,6 +18,7 @@ export interface UserActivity {
   completed: boolean;
   completedAt: string | null;
   evidenceUrl: string | null;
+  observations: string | null;
 }
 
 interface ApiUserActivity {
@@ -28,6 +29,7 @@ interface ApiUserActivity {
   total_pending: number;
   completed_at: string | null;
   evidence_url: string | null;
+  observations: string | null;
 }
 
 interface ApiUserWithMetrics extends ApiUser {
@@ -72,6 +74,7 @@ class UserService {
       completed: a.completed_at !== null,
       completedAt: a.completed_at,
       evidenceUrl: a.evidence_url,
+      observations: a.observations,
     }));
   }
 

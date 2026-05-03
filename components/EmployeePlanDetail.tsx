@@ -7,6 +7,7 @@ import Drawer from './Drawer';
 import Spinner from './shared/Spinner';
 import { useToast } from '../hooks/useToast';
 import { formatDate } from '../utils/formatDate';
+import { getProgressBarColor, getTextColor } from '@/utils/progressColor';
 
 const MONTH_NAMES: Record<number, string> = {
   1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
@@ -142,12 +143,17 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete }) => 
     </div>
     <div className={`px-6 ${activity.completed ? 'py-2.5' : 'py-3'} bg-slate-50 border-t border-slate-100 flex items-center gap-2`}>
       {activity.completed ? (
-        <div className="flex items-center gap-2">
-          <svg className="w-3 h-3 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 6v6l4 2" />
-          </svg>
-          <span className="text-xs text-slate-400">Completada el <span className="text-slate-500">{formatDate(activity.completedAt)}</span></span>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <svg className="w-3 h-3 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+            <span className="text-xs text-slate-400">Completada el <span className="text-slate-500">{formatDate(activity.completedAt)}</span></span>
+          </div>
+          {activity.observations && (
+            <p className="text-xs text-slate-500 italic">{activity.observations}</p>
+          )}
         </div>
       ) : (
         <div className="flex justify-end items-center gap-3 w-full">
@@ -238,13 +244,12 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
         evidenceUrl.trim(),
         evidenceObservations.trim() || undefined
       );
+      debugger;
       setActivities(prev => prev.map(a => 
         a.id === activityToComplete.id 
           ? { 
               ...a, 
-              completed: true, 
-              completedAt: completion.createdAt, 
-              evidenceUrl: completion.evidenceUrl 
+              ...completion
             }
           : a
       ));
@@ -317,12 +322,14 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
             <div className="flex-1 mx-4">
               <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                  className={`h-full ${getProgressBarColor(progress)} rounded-full transition-all duration-300`}
                   style={{ width: `${progress}%` }}
                 />
               </div>
             </div>
-            <span className="text-emerald-600 font-semibold whitespace-nowrap">{progress}%</span>
+            <span className={`font-semibold whitespace-nowrap ${getTextColor(progress)}`}>
+              {progress}%
+            </span>
           </div>
         </div>
 
