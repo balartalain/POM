@@ -2,7 +2,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import Pusher from 'pusher-js';
 import { User, Role } from './types';
-import { userService } from './services/UserService';
+import { loginWithGoogle, getStoredUser, logout } from './services/authService';
 import Login from './components/Login';
 import SupervisorLayout from './components/SupervisorLayout';
 import UserLayout from './components/UserLayout';
@@ -13,59 +13,43 @@ import TailwindIndicator from './components/TailwindIndicator';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
   useEffect(() => {
-     console.log('Entrando a la app');
-    const pusher = new Pusher('b23e7b8bf6ab3b8b19ff', {
-      cluster: 'us2',
-    });
+    const stored = getStoredUser();
+    if (stored) setCurrentUser(stored);
+    setAuthChecked(true);
+  }, []);
 
-    // 2. Suscribirse al canal (usando la lógica de recintos que hablamos)
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const pusher = new Pusher('b23e7b8bf6ab3b8b19ff', { cluster: 'us2' });
     const channel = pusher.subscribe('plan');
-
-    channel.bind('update-plan', (data) => {      
+    channel.bind('update-plan', (data: unknown) => {
       console.log('Datos recibidos desde Django:', data);
     });
 
-    // 4. Limpieza: Desconectar al desmontar el componente
-    return () => {
-      pusher.unsubscribe('plan');
-    };
-  }, []);
+    return () => { pusher.unsubscribe('plan'); };
+  }, [currentUser]);
 
-  const handleLogin = useCallback(async (username: string): Promise<boolean> => {
-    try {
-      if (username.toLowerCase() === 'supervisor') {
-        setCurrentUser({
-          id: 1,
-          username: 'supervisor',
-          name: 'Supervisor',
-          role: Role.SUPERVISOR,
-        });
-        return true;
-      } else if (username.toLowerCase() === 'employee') {
-        setCurrentUser({
-          id: 2,
-          username: 'employee',
-          name: 'Employee',
-          role: Role.EMPLOYEE,
-        });
-        return true;
-      }
-      return false;
-    } catch {
-      return false;
-    }
+  const handleGoogleLogin = useCallback(async (credential: string) => {
+    const user = await loginWithGoogle(credential);
+    setCurrentUser(user);
   }, []);
 
   const handleLogout = useCallback(() => {
+    logout();
     setCurrentUser(null);
   }, []);
 
   const renderContent = useMemo(() => {
+    if (!authChecked) return null;
+
     if (!currentUser) {
-      return <Login onLogin={handleLogin} />;
+      return <Login onLogin={handleGoogleLogin} />;
     }
+
     return (
       <div className="min-h-screen bg-light-gray">
         <Header user={currentUser} onLogout={handleLogout} />
@@ -78,7 +62,7 @@ const App: React.FC = () => {
         </main>
       </div>
     );
-  }, [currentUser, handleLogin, handleLogout]);
+  }, [currentUser, authChecked, handleGoogleLogin, handleLogout]);
 
   return (
     <ToastProvider>

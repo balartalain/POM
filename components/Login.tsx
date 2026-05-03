@@ -1,74 +1,43 @@
-
-import React, { useState } from 'react';
-import { LockClosedIcon, UserIcon } from './Icons';
-import Spinner from './shared/Spinner';
+import React, { useEffect, useRef } from 'react';
 
 interface LoginProps {
-  onLogin: (username: string) => Promise<boolean>;
+  onLogin: (credential: string) => Promise<void>;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
-  const [username, setUsername] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const btnRef = useRef<HTMLDivElement>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError('');
-    const success = await onLogin(username);
-    if (!success) {
-      setError('Usuario no encontrado. Verifica tu nombre de usuario.');
-      setIsLoading(false);
+  useEffect(() => {
+    //const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+    const clientId = "478848519153-0tklbkp5d7252099relj297632eka3qg.apps.googleusercontent.com";
+    if (!clientId || !window.google) return;
+
+    window.google.accounts.id.initialize({
+      client_id: clientId,
+      callback: ({ credential }) => onLogin(credential),
+    });
+
+    if (btnRef.current) {
+      window.google.accounts.id.renderButton(btnRef.current, {
+        theme: 'outline',
+        size: 'large',
+        width: 300,
+        text: 'signin_with',
+        locale: 'es',
+      });
     }
-  };
+  }, [onLogin]);
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col justify-center items-center p-4">
       <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 space-y-8">
         <div className="text-center">
-            <h1 className="text-3xl font-bold text-primary">Gestor de PAME</h1>
-            <p className="mt-2 text-dark-gray">Inicia sesión en tu cuenta</p>
+          <h1 className="text-3xl font-bold text-primary">Gestor de PAME</h1>
+          <p className="mt-2 text-dark-gray">Inicia sesión con tu cuenta institucional</p>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <UserIcon className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                    id="username"
-                    name="username"
-                    type="text"
-                    autoComplete="username"
-                    required
-                    className="appearance-none rounded-md relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
-                    placeholder="Usuario (ej: supervisor, employee1, employee2)"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                />
-            </div>
-            
-            {error && <p className="text-sm text-red-600">{error}</p>}
-
-            <div>
-                <button
-                    type="submit"
-                    disabled={isLoading}
-                    className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-                >
-                    {isLoading ? (
-                      <Spinner className="h-5 w-5 text-white" />
-                    ) : (
-                      <>
-                        <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                          <LockClosedIcon className="h-5 w-5 text-indigo-300 group-hover:text-indigo-200" />
-                        </span>
-                        Iniciar sesión
-                      </>
-                    )}
-                </button>
-            </div>
-        </form>
+        <div className="flex justify-center">
+          <div ref={btnRef} />
+        </div>
       </div>
     </div>
   );
