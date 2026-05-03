@@ -13,6 +13,9 @@ export default defineConfig(({ mode }) => {
       plugins: [
         react(),
         VitePWA({
+          strategies: 'injectManifest',
+          srcDir: '.',
+          filename: 'sw.ts',
           registerType: 'autoUpdate',
           includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'],
           manifest: {
@@ -31,11 +34,9 @@ export default defineConfig(({ mode }) => {
               { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
             ],
           },
-          workbox: {
-            globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-          },
           devOptions: {
             enabled: true,
+            type: 'module',
           },
         }),
       ],

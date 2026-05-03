@@ -11,6 +11,10 @@ import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ToastContainer';
 import TailwindIndicator from './components/TailwindIndicator';
 import { useToast } from './hooks/useToast';
+import { usePushNotifications } from './hooks/usePushNotifications';
+import type { DataUpdateType } from './hooks/useDataSync';
+
+// ─── Sesión expirada ────────────────────────────────────────────────────────
 
 const SessionExpiredListener: React.FC<{ onExpired: () => void }> = ({ onExpired }) => {
   const { addToast } = useToast();
@@ -29,6 +33,70 @@ const SessionExpiredListener: React.FC<{ onExpired: () => void }> = ({ onExpired
   return null;
 };
 
+// ─── Notificaciones en tiempo real ──────────────────────────────────────────
+
+type UpdateMeta = { title: string; body: string };
+
+const UPDATE_META: Record<DataUpdateType, UpdateMeta> = {
+  UPDATE_PLANS:      { title: 'Planes actualizados',      body: 'Hay cambios en los planes disponibles.' },
+  UPDATE_ACTIVITIES: { title: 'Actividades actualizadas', body: 'Hay cambios en las actividades disponibles.' },
+  UPDATE_COMPLETIONS:{ title: 'Completados actualizados', body: 'Hay cambios en los completados disponibles.' },
+};
+
+function dispatch(type: DataUpdateType) {
+  window.dispatchEvent(new CustomEvent('pame:data-update', { detail: { type } }));
+}
+
+const RealtimeListener: React.FC<{ user: User }> = ({ user }) => {
+  const { addToast } = useToast();
+  const { subscribe, getPendingUpdates } = usePushNotifications();
+
+  // Solicita permiso push y registra la suscripción al hacer login
+  useEffect(() => {
+    subscribe().catch(() => {});
+  }, [user, subscribe]);
+
+  // Comprueba pending updates: al montar, al ganar foco y al volver a ser visible
+  const checkPending = useCallback(async () => {
+    const updates = await getPendingUpdates();
+    if (updates.length === 0) return;
+    updates.forEach((type) => dispatch(type as DataUpdateType));
+    addToast('Hay datos actualizados disponibles', 'info');
+  }, [getPendingUpdates, addToast]);
+
+  useEffect(() => {
+    checkPending();
+    window.addEventListener('focus', checkPending);
+    document.addEventListener('visibilitychange', checkPending);
+    return () => {
+      window.removeEventListener('focus', checkPending);
+      document.removeEventListener('visibilitychange', checkPending);
+    };
+  }, [checkPending]);
+
+  // Pusher: notificaciones en tiempo real cuando la app está activa
+  useEffect(() => {
+    const pusher = new Pusher('b23e7b8bf6ab3b8b19ff', { cluster: 'us2' });
+    const channel = pusher.subscribe('pame');
+
+    const handleUpdate = (type: DataUpdateType) => {
+      const meta = UPDATE_META[type];
+      addToast(meta.body, 'info');
+      dispatch(type);
+    };
+
+    channel.bind('UPDATE_PLANS',       () => handleUpdate('UPDATE_PLANS'));
+    channel.bind('UPDATE_ACTIVITIES',  () => handleUpdate('UPDATE_ACTIVITIES'));
+    channel.bind('UPDATE_COMPLETIONS', () => handleUpdate('UPDATE_COMPLETIONS'));
+
+    return () => { pusher.disconnect(); };
+  }, [user, addToast]);
+
+  return null;
+};
+
+// ─── App principal ──────────────────────────────────────────────────────────
+
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
@@ -38,18 +106,6 @@ const App: React.FC = () => {
     if (stored) setCurrentUser(stored);
     setAuthChecked(true);
   }, []);
-
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const pusher = new Pusher('b23e7b8bf6ab3b8b19ff', { cluster: 'us2' });
-    const channel = pusher.subscribe('plan');
-    channel.bind('update-plan', (data: unknown) => {
-      console.log('Datos recibidos desde Django:', data);
-    });
-
-    return () => { pusher.unsubscribe('plan'); };
-  }, [currentUser]);
 
   const handleGoogleLogin = useCallback(async (credential: string) => {
     const user = await loginWithGoogle(credential);
@@ -85,6 +141,7 @@ const App: React.FC = () => {
   return (
     <ToastProvider>
       <SessionExpiredListener onExpired={handleLogout} />
+      {currentUser && <RealtimeListener user={currentUser} />}
       {renderContent}
       <TailwindIndicator />
       <ToastContainer />
