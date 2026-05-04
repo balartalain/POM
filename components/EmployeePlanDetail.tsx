@@ -96,9 +96,10 @@ const UploadEvidence: React.FC<UploadEvidenceProps> = ({ description, selectedFi
 interface ActivityItemProps {
   activity: UserActivity;
   onComplete: (activity: UserActivity) => void;
+  isPlanExpired: boolean;
 }
 
-const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete }) => (
+const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete, isPlanExpired }) => (
   <div
     className={`bg-white border border-slate-200 rounded-xl overflow-hidden ${
       activity.completed ? 'border-l-4 border-l-emerald-400' : 'border-l-4 border-l-amber-400'
@@ -166,7 +167,8 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete }) => 
           <span className="hidden sm:inline text-xs text-slate-400 flex-1">Para completar esta actividad, pega el enlace de tu evidencia en Google Drive</span>
           <button
             onClick={() => onComplete(activity)}
-            className="inline-flex items-center gap-2 text-xs font-medium bg-[#1e3a8a] hover:bg-[#162d6e] text-white px-4 py-2 rounded-lg transition-colors"
+            disabled={isPlanExpired}
+            className="inline-flex items-center gap-2 text-xs font-medium bg-[#1e3a8a] hover:bg-[#162d6e] text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#1e3a8a]"
           >
             <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
@@ -219,6 +221,14 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
     if (metrics.total === 0) return 0;
     return Math.round((metrics.completed / metrics.total) * 100);
   }, [metrics]);
+
+  const isPlanExpired = useMemo(() => {
+    const [year, month, day] = plan.expiration_date.split('-').map(Number);
+    const expiry = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return expiry < today;
+  }, [plan.expiration_date]);
 
 
   const closeDrawer = () => {
@@ -345,6 +355,7 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
                 key={activity.id}
                 activity={activity}
                 onComplete={a => { setActivityToComplete(a); }}
+                isPlanExpired={isPlanExpired}
               />
             )) : (
               <div className="text-center text-slate-500 p-8 bg-white border border-slate-200 rounded-xl">
