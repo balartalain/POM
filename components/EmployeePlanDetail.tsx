@@ -20,6 +20,7 @@ interface EmployeePlanDetailProps {
   plan: Plan;
   employee: User;
   onBack: () => void;
+  onUpdatePlan: (planId: number, metrics: Pick<Plan, 'total_completed' | 'completion_percentage'>) => void;
 }
 
 interface UploadEvidenceProps {
@@ -179,7 +180,7 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete }) => 
   </div>
 );
 
-const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee, onBack }) => {
+const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee, onBack, onUpdatePlan }) => {
   const [activities, setActivities] = useState<UserActivity[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -247,9 +248,15 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
         evidenceUrl.trim(),
         evidenceObservations.trim() || undefined
       );
-      setActivities(prev => prev.map(a =>
+      const updatedActivities = activities.map(a =>
         a.id === activityToComplete.id ? { ...a, ...completion } : a
-      ));
+      );
+      setActivities(updatedActivities);
+      const total_completed = updatedActivities.filter(a => a.completed).length;
+      const completion_percentage = plan.total_activities > 0
+        ? Math.round((total_completed / plan.total_activities) * 100)
+        : 0;
+      onUpdatePlan(plan.id, { total_completed, completion_percentage });
       addToast('Actividad completada con éxito.', 'success');
       closeDrawer();
     } catch (err) {

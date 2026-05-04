@@ -68,7 +68,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
   [filteredPlans]);
 
   const handleSelectPlan = (plan: Plan) => setSelectedPlan(plan);
-  const handleBackToDashboard = () => setSelectedPlan(null);
+  const handleBackToDashboard = () => { setSelectedPlan(null); fetchPlans(); };
 
   const handleUpdatePlan = (updatedPlan: Plan) => {
     setPlans(prev => prev.map(p => p.id === updatedPlan.id ? updatedPlan : p));

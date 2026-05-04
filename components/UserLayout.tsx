@@ -48,12 +48,17 @@ const UserLayout: React.FC<UserLayoutProps> = ({ employee }) => {
       }, {}),
   [plans]);
 
+  const handlePlanUpdate = useCallback((planId: number, metrics: Pick<Plan, 'total_completed' | 'completion_percentage'>) => {
+    setPlans(prev => prev.map(p => p.id === planId ? { ...p, ...metrics } : p));
+  }, []);
+
   if (selectedPlan) {
     return (
       <EmployeePlanDetail
         plan={selectedPlan}
         employee={employee}
         onBack={() => setSelectedPlan(null)}
+        onUpdatePlan={handlePlanUpdate}
       />
     );
   }
