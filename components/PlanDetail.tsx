@@ -149,7 +149,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
 
   useEffect(() => { fetchActivities(); }, [fetchActivities]);
 
-  useDataSync(['UPDATE_ACTIVITIES', 'UPDATE_COMPLETIONS'], fetchActivities);
+  //useDataSync(['UPDATE_ACTIVITIES', 'UPDATE_COMPLETIONS'], fetchActivities);
 
   const metrics = useMemo(() => {
     const completed = activities.filter(a => a.total_pending === 0).length;

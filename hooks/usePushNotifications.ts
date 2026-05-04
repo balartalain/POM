@@ -61,17 +61,17 @@ export function usePushNotifications() {
     localStorage.removeItem(PUSH_USER_KEY);
   }, []);
 
-  const getPendingUpdates = useCallback(async (): Promise<string[]> => {
+  const getPendingUpdates = useCallback(async (): Promise<{ type: string; body: string }[]> => {
     if (!('serviceWorker' in navigator)) return [];
 
     const registration = await navigator.serviceWorker.ready;
     const controller = registration.active;
     if (!controller) return [];
 
-    return new Promise<string[]>((resolve) => {
+    return new Promise<{ type: string; body: string }[]>((resolve) => {
       const channel = new MessageChannel();
       const timeout = setTimeout(() => resolve([]), 1500);
-      channel.port1.onmessage = (event: MessageEvent<{ updates: string[] }>) => {
+      channel.port1.onmessage = (event: MessageEvent<{ updates: { type: string; body: string }[] }>) => {
         clearTimeout(timeout);
         resolve(event.data.updates ?? []);
       };

@@ -205,7 +205,7 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
 
   useEffect(() => { fetchActivities(); }, [fetchActivities]);
 
-  useDataSync(['UPDATE_ACTIVITIES', 'UPDATE_COMPLETIONS'], fetchActivities);
+  //useDataSync(['UPDATE_ACTIVITIES', 'UPDATE_COMPLETIONS'], fetchActivities);
 
   const metrics = useMemo(() => {
     const completed = activities.filter(a => a.completed).length;

@@ -61,8 +61,10 @@ const RealtimeListener: React.FC<{ user: User }> = ({ user }) => {
   const checkPending = useCallback(async () => {
     const updates = await getPendingUpdates();
     if (updates.length === 0) return;
-    updates.forEach((type) => dispatch(type as DataUpdateType));
-    addToast('Hay datos actualizados disponibles', 'info');
+    updates.forEach(({ type, body }) => {
+      dispatch(type as DataUpdateType);
+      //addToast(body, 'info');
+    });
   }, [getPendingUpdates, addToast]);
 
   useEffect(() => {
@@ -74,6 +76,18 @@ const RealtimeListener: React.FC<{ user: User }> = ({ user }) => {
       document.removeEventListener('visibilitychange', checkPending);
     };
   }, [checkPending]);
+
+  // Mensajes del SW: toast cuando llega un push y la app está activa
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === 'PUSH_NOTIFICATION') {
+        addToast(event.data.payload.body, 'info');
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', handler);
+    return () => navigator.serviceWorker.removeEventListener('message', handler);
+  }, [addToast]);
 
   // Pusher: notificaciones en tiempo real cuando la app está activa
   // useEffect(() => {

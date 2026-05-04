@@ -15,6 +15,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     window.google.accounts.id.initialize({
       client_id: clientId,
       callback: ({ credential }) => onLogin(credential),
+      use_fedcm_for_prompt: false
     });
 
     if (btnRef.current) {

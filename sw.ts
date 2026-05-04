@@ -11,17 +11,17 @@ precacheAndRoute(self.__WB_MANIFEST);
 const PENDING_CACHE = 'pame-pending-updates-v1';
 const PENDING_KEY = 'updates';
 
-async function getPending(): Promise<string[]> {
+async function getPending(): Promise<{ type: string; body: string }[]> {
   const cache = await caches.open(PENDING_CACHE);
   const res = await cache.match(PENDING_KEY);
-  return res ? (res.json() as Promise<string[]>) : [];
+  return res ? (res.json() as Promise<{ type: string; body: string }[]>) : [];
 }
 
-async function addPending(type: string): Promise<void> {
+async function addPending(type: string, body: string): Promise<void> {
   const cache = await caches.open(PENDING_CACHE);
   const updates = await getPending();
-  if (!updates.includes(type)) {
-    updates.push(type);
+  if (!updates.find((u) => u.type === type)) {
+    updates.push({ type, body });
     await cache.put(PENDING_KEY, new Response(JSON.stringify(updates), {
       headers: { 'Content-Type': 'application/json' },
     }));
@@ -47,16 +47,25 @@ self.addEventListener('push', (event: PushEvent) => {
   const { type, title = 'PAME', body = 'Hay datos actualizados disponibles' } = payload;
 
   event.waitUntil(
-    Promise.all([
-      addPending(type),
-      self.registration.showNotification(title, {
-        body,
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        tag: type,
-        data: { type },
-      }),
-    ])
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      const visibleClient = clientList.find((c) => (c as WindowClient).visibilityState === 'visible');
+      if (visibleClient) {
+        // App activa: enviar mensaje al tab visible para mostrar un toast
+        visibleClient.postMessage({ type: 'PUSH_NOTIFICATION', payload: { type, title, body } });
+        return;
+      }
+      // App cerrada/en background: notificación nativa + guardar pending
+      return Promise.all([
+        addPending(type, body),
+        self.registration.showNotification(title, {
+          body,
+          icon: '/icon-192.png',
+          badge: '/icon-192.png',
+          tag: type,
+          data: { type },
+        }),
+      ]);
+    })
   );
 });
 

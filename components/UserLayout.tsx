@@ -35,7 +35,7 @@ const UserLayout: React.FC<UserLayoutProps> = ({ employee }) => {
 
   useEffect(() => { fetchPlans(); }, [fetchPlans]);
 
-  useDataSync('UPDATE_PLANS', fetchPlans);
+  //useDataSync('UPDATE_PLANS', fetchPlans);
 
   const plansByMonth = useMemo(() =>
     [...plans]

@@ -52,7 +52,7 @@ const SupervisorDashboard: React.FC<SupervisorDashboardProps> = ({ supervisor })
 
   useEffect(() => { fetchPlans(); }, [fetchPlans]);
 
-  useDataSync('UPDATE_PLANS', fetchPlans);
+  //useDataSync('UPDATE_PLANS', fetchPlans);
 
   const filteredPlans = useMemo(() =>
     [...plans].sort((a, b) => b.month - a.month || new Date(b.expiration_date).getTime() - new Date(a.expiration_date).getTime()),
