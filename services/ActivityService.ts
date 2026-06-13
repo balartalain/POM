@@ -57,17 +57,16 @@ class ActivityService {
   async complete(
     activityId: number,
     employeeId: number,
-    evidenceUrl: string,
+    evidenceFile: File,
     observations?: string
   ): Promise<ActivityCompletion> {
+    const formData = new FormData();
+    formData.append('employee_id', String(employeeId));
+    formData.append('observations', observations || '');
+    formData.append('evidencia_file', evidenceFile);
     return request<ActivityCompletion>(`/api/v1/actividades/${activityId}/completar/`, {
       method: 'POST',
-      body: JSON.stringify({
-        activity_id: activityId,
-        employee_id: employeeId,
-        evidence_url: evidenceUrl,
-        observations: observations || '',
-      }),
+      body: formData,
     });
   }
 }

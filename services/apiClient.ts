@@ -72,7 +72,7 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
   const response = await fetch(`${BASE_URL}${path}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(!(options?.body instanceof FormData) && { 'Content-Type': 'application/json' }),
       'Authorization': `Bearer ${token}`,
       ...options?.headers,
     },

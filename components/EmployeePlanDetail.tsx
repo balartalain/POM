@@ -26,20 +26,22 @@ interface EmployeePlanDetailProps {
 interface UploadEvidenceProps {
   description: string;
   selectedFile: File | null;
+  observations: string;
   isUploading: boolean;
   onFileChange: (file: File | null) => void;
+  onObservationsChange: (value: string) => void;
   onCancel: () => void;
   onUpload: () => void;
 }
 
-const UploadEvidence: React.FC<UploadEvidenceProps> = ({ description, selectedFile, isUploading, onFileChange, onCancel, onUpload }) => {
+const UploadEvidence: React.FC<UploadEvidenceProps> = ({ description, selectedFile, observations, isUploading, onFileChange, onObservationsChange, onCancel, onUpload }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   return (
     <>
       <div className="space-y-6">
         <p className="text-sm text-gray-500">{description}</p>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Archivo de evidencia</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Archivo de evidencia *</label>
           <div
             onClick={() => fileInputRef.current?.click()}
             className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-[#1e3a8a] hover:bg-blue-50 transition-colors"
@@ -75,6 +77,19 @@ const UploadEvidence: React.FC<UploadEvidenceProps> = ({ description, selectedFi
             </button>
           </div>
         )}
+        <div>
+          <label htmlFor="evidenceObservations" className="block text-sm font-medium text-gray-700 mb-1">
+            Observaciones (opcional)
+          </label>
+          <textarea
+            id="evidenceObservations"
+            value={observations}
+            onChange={e => onObservationsChange(e.target.value)}
+            rows={3}
+            className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
+            placeholder="Agrega alguna observación sobre la evidencia..."
+          />
+        </div>
       </div>
       <div className="mt-8 flex justify-end gap-3 border-t pt-4">
         <button onClick={onCancel} disabled={isUploading} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm disabled:opacity-70">
@@ -86,7 +101,7 @@ const UploadEvidence: React.FC<UploadEvidenceProps> = ({ description, selectedFi
           className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isUploading && <Spinner />}
-          {isUploading ? 'Subiendo...' : 'Subir evidencia'}
+          {isUploading ? 'Subiendo...' : 'Completar actividad'}
         </button>
       </div>
     </>
@@ -160,21 +175,14 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete, isPla
         </div>
       ) : (
         <div className="flex justify-end items-center gap-3 w-full">
-          <svg className="hidden sm:inline w-4 h-4 text-slate-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-            <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-          </svg>
-          <span className="hidden sm:inline text-xs text-slate-400 flex-1">Para completar esta actividad, pega el enlace de tu evidencia en Google Drive</span>
+          <span className="hidden sm:inline text-xs text-slate-400 flex-1">Para completar esta actividad, sube un archivo de evidencia</span>
           <button
             onClick={() => onComplete(activity)}
             disabled={isPlanExpired}
             className="inline-flex items-center gap-2 text-xs font-medium bg-[#1e3a8a] hover:bg-[#162d6e] text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#1e3a8a]"
           >
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-              <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-            </svg>
-            Pegar enlace de evidencia
+            <UploadIcon className="w-3 h-3" />
+            Subir evidencia
           </button>
         </div>
       )}
@@ -190,12 +198,8 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
 
   const [activityToComplete, setActivityToComplete] = useState<UserActivity | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-
-  const [evidenceUrl, setEvidenceUrl] = useState('');
   const [evidenceObservations, setEvidenceObservations] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showUrlDrawer, setShowUrlDrawer] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const fetchActivities = useCallback(() => {
     setLoading(true);
@@ -233,7 +237,7 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
 
   const closeDrawer = () => {
     setActivityToComplete(null);
-    setEvidenceUrl('');
+    setSelectedFile(null);
     setEvidenceObservations('');
   };
 
@@ -241,21 +245,10 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
     if (!selectedFile || !activityToComplete) return;
     setIsUploading(true);
     try {
-      await new Promise(r => setTimeout(r, 1000));
-      closeDrawer();
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleSubmitEvidence = async () => {
-    if (!activityToComplete || !evidenceUrl.trim()) return;
-    setIsSubmitting(true);
-    try {
       const completion = await activityService.complete(
         activityToComplete.id,
         employee.id,
-        evidenceUrl.trim(),
+        selectedFile,
         evidenceObservations.trim() || undefined
       );
       const updatedActivities = activities.map(a =>
@@ -272,7 +265,7 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
     } catch (err) {
       addToast(err instanceof Error ? err.message : 'Error al completar la actividad.', 'error');
     } finally {
-      setIsSubmitting(false);
+      setIsUploading(false);
     }
   };
 
@@ -365,72 +358,21 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
           </div>
         </div>      
       </div>
-      {/*}
-      <Drawer
-        isOpen={activityToUpload !== null}
-        onClose={closeDrawer}
-        title={`Subir evidencia — ${activityToUpload?.title ?? ''}`}
-      >
-        <UploadEvidence
-          description={activityToUpload?.description ?? ''}
-          selectedFile={selectedFile}
-          isUploading={isUploading}
-          onFileChange={setSelectedFile}
-          onCancel={closeDrawer}
-          onUpload={handleUpload}
-        />
-      </Drawer>
-      */}
       <Drawer
         isOpen={activityToComplete !== null}
         onClose={closeDrawer}
         title={`Completar actividad — ${activityToComplete?.title ?? ''}`}
       >
-        <div className="space-y-5">
-          <p className="text-sm text-gray-500">{activityToComplete?.description}</p>
-
-          <div>
-            <label htmlFor="evidenceUrl" className="block text-sm font-medium text-gray-700 mb-1">
-              Enlace de evidencia *
-            </label>
-            <input
-              type="url"
-              id="evidenceUrl"
-              value={evidenceUrl}
-              onChange={e => setEvidenceUrl(e.target.value)}
-              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
-              placeholder="https://drive.google.com/..."
-            />
-          </div>
-
-          <div>
-            <label htmlFor="evidenceObservations" className="block text-sm font-medium text-gray-700 mb-1">
-              Observaciones (opcional)
-            </label>
-            <textarea
-              id="evidenceObservations"
-              value={evidenceObservations}
-              onChange={e => setEvidenceObservations(e.target.value)}
-              rows={3}
-              className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#1e3a8a] focus:border-transparent"
-              placeholder="Agrega alguna observación sobre la evidencia..."
-            />
-          </div>
-        </div>
-
-        <div className="mt-8 flex justify-end gap-3 border-t pt-4">
-          <button onClick={closeDrawer} disabled={isSubmitting} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 text-sm disabled:opacity-70">
-            Cancelar
-          </button>
-          <button
-            onClick={handleSubmitEvidence}
-            disabled={isSubmitting || !evidenceUrl.trim()}
-            className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isSubmitting && <Spinner />}
-            {isSubmitting ? 'Guardando...' : 'Completar actividad'}
-          </button>
-        </div>
+        <UploadEvidence
+          description={activityToComplete?.description ?? ''}
+          selectedFile={selectedFile}
+          observations={evidenceObservations}
+          isUploading={isUploading}
+          onFileChange={setSelectedFile}
+          onObservationsChange={setEvidenceObservations}
+          onCancel={closeDrawer}
+          onUpload={handleUpload}
+        />
       </Drawer>
     </>
   );

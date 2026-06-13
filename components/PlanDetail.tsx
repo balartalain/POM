@@ -40,13 +40,13 @@ const ActivityItem: React.FC<ActivityItemProps> = ({
 }) => {
   const completedCount = activity.total_completed;
   const percent = activity.completion_percentage || 0;
-  const borderColor = isSelected ? 'border-[#2563EB]' : getBorderColor(percent);
+  const borderColor = isSelected ? 'border-l-[#2563EB]' : getBorderColor(percent);
   return (
     <div
       onClick={() => onSelect(activity)}
       className={`bg-white rounded-xl overflow-hidden border-l-4 ${borderColor} cursor-pointer transition-all duration-200
         ${isSelected
-          ? 'border border-[#2563EB] shadow-xl relative z-10 bg-blue-50'
+          ? 'border border-slate-200 hover:shadow-md hover:bg-gray-100 xl:border-[#2563EB] xl:shadow-xl xl:relative xl:z-10 xl:bg-blue-50'
           : 'border border-slate-200 hover:shadow-md hover:bg-gray-100'
         }`}
     >
@@ -291,7 +291,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
 
         {/* Activities section */}
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className={`flex items-center justify-between mb-4 ${showCompletions ? 'hidden xl:flex' : ''}`}>
             <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">Actividades</h4>
             <button
               onClick={() => setIsAddOpen(true)}
@@ -316,7 +316,7 @@ const PlanDetail: React.FC<PlanDetailProps> = ({ plan, onBack }) => {
                     <ActivityItem
                       key={activity.id}
                       activity={activity}
-                      isSelected={selectedActivityId === activity.id}
+                      isSelected={false}
                       onEdit={setActivityToEdit}
                       onDelete={setActivityToDelete}
                       onSelect={a => { setSelectedActivityId(a.id); setShowCompletions(true); }}
