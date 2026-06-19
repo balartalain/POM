@@ -9,7 +9,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   useEffect(() => {
     //const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
-    const clientId = "478848519153-0tklbkp5d7252099relj297632eka3qg.apps.googleusercontent.com";
+    const clientId = "594994533630-rlit9lug7tc2ng1it6gea35pf9kbfe2k.apps.googleusercontent.com";
     if (!clientId || !window.google) return;
 
     window.google.accounts.id.initialize({
