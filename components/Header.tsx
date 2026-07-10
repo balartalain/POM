@@ -11,16 +11,19 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ user, onLogout }) => {
   return (
-    <header className="bg-primary shadow-md">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="bg-[#ffffff] shadow-sm">
+      <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <h1 className="text-lg sm:text-2xl font-bold text-white">Plan de Actividades</h1>
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="Logo" className="h-8" />
+          </div>
+          <div className="flex-1 flex justify-center">
+            <h1 className="hidden sm:block text-lg font-semibold text-gray-500">Plan de Actividades</h1>
           </div>
           <div className="flex items-center space-x-4">
             <OnlineIndicator />
-            <div className="text-right">
-              <p className="text-sm font-medium text-white">{user.name}</p>              
+            <div className="hidden sm:block text-right">
+              <p className="text-sm font-medium">{user.name}</p>
             </div>
             <button
               onClick={onLogout}
