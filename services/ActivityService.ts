@@ -69,6 +69,28 @@ class ActivityService {
       body: formData,
     });
   }
+
+  /** PATCH /api/v1/actividades/{id}/mi-completacion/ */
+  async updateMyCompletion(
+    activityId: number,
+    observations: string,
+    evidenceFile?: File
+  ): Promise<ActivityCompletion> {
+    const formData = new FormData();
+    formData.append('observations', observations);
+    if (evidenceFile) formData.append('evidencia_file', evidenceFile);
+    return request<ActivityCompletion>(`/api/v1/actividades/${activityId}/mi-completacion/`, {
+      method: 'PATCH',
+      body: formData,
+    });
+  }
+
+  /** DELETE /api/v1/actividades/{id}/mi-completacion/ */
+  async deleteMyCompletion(activityId: number): Promise<void> {
+    return request<void>(`/api/v1/actividades/${activityId}/mi-completacion/`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export const activityService = new ActivityService();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Plan, User } from '../types';
-import { ArrowLeftIcon, CheckCircleIcon, ClockIcon, LinkIcon, ExternalLinkIcon, UploadIcon } from './Icons';
+import { ArrowLeftIcon, CheckCircleIcon, ClockIcon, LinkIcon, ExternalLinkIcon, UploadIcon, PencilIcon, TrashIcon } from './Icons';
 import { userService, UserActivity } from '../services/UserService';
 import { activityService } from '../services/ActivityService';
 import Drawer from './Drawer';
@@ -32,16 +32,35 @@ interface UploadEvidenceProps {
   onObservationsChange: (value: string) => void;
   onCancel: () => void;
   onUpload: () => void;
+  submitLabel?: string;
+  submittingLabel?: string;
+  fileRequired?: boolean;
+  currentEvidenceUrl?: string | null;
 }
 
-const UploadEvidence: React.FC<UploadEvidenceProps> = ({ description, selectedFile, observations, isUploading, onFileChange, onObservationsChange, onCancel, onUpload }) => {
+const UploadEvidence: React.FC<UploadEvidenceProps> = ({
+  description, selectedFile, observations, isUploading, onFileChange, onObservationsChange, onCancel, onUpload,
+  submitLabel = 'Completar actividad', submittingLabel = 'Subiendo...', fileRequired = true, currentEvidenceUrl,
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   return (
     <>
       <div className="space-y-6">
         <p className="text-sm text-gray-500">{description}</p>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Archivo de evidencia *</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {fileRequired ? 'Archivo de evidencia *' : 'Archivo de evidencia (opcional, reemplaza el actual)'}
+          </label>
+          {currentEvidenceUrl && (
+            <a
+              href={currentEvidenceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mb-2 text-xs text-blue-600 hover:text-blue-700 font-medium"
+            >
+              Ver evidencia actual
+            </a>
+          )}
           <div
             onClick={() => fileInputRef.current?.click()}
             className="flex flex-col items-center justify-center gap-3 border-2 border-dashed border-gray-300 rounded-lg p-8 cursor-pointer hover:border-[#1e3a8a] hover:bg-blue-50 transition-colors"
@@ -97,11 +116,11 @@ const UploadEvidence: React.FC<UploadEvidenceProps> = ({ description, selectedFi
         </button>
         <button
           onClick={onUpload}
-          disabled={!selectedFile || isUploading}
+          disabled={(fileRequired && !selectedFile) || isUploading}
           className="px-4 py-2 bg-[#1e3a8a] text-white rounded-md hover:bg-[#162d6e] text-sm font-semibold disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
         >
           {isUploading && <Spinner />}
-          {isUploading ? 'Subiendo...' : 'Completar actividad'}
+          {isUploading ? submittingLabel : submitLabel}
         </button>
       </div>
     </>
@@ -112,74 +131,120 @@ interface ActivityItemProps {
   activity: UserActivity;
   onComplete: (activity: UserActivity) => void;
   isPlanExpired: boolean;
+  onEdit?: (activity: UserActivity) => void;
+  onDeleteEvidence?: (activityId: number) => void;
 }
 
-const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete, isPlanExpired }) => (
+const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete, isPlanExpired, onEdit, onDeleteEvidence }) => {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  return (
   <div
     className={`bg-white border border-slate-200 rounded-xl overflow-hidden ${
       activity.completed ? 'border-l-4 border-l-emerald-400' : 'border-l-4 border-l-amber-400'
     }`}
   >
-    <div className="flex items-center gap-6 px-6 py-5">
+    <div className="flex items-start justify-between gap-3 sm:gap-6 px-4 sm:px-6 py-4 sm:py-5">
       <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-semibold text-slate-800 mb-1">{activity.title}</h3>
-        <p className="text-xs text-slate-400 leading-relaxed">{activity.description}</p>
+        <h3 className="text-sm font-semibold text-slate-800 mb-1 break-words">{activity.title}</h3>
+        <p className="text-xs text-slate-400 leading-relaxed break-words">{activity.description}</p>
       </div>
-      <div className="flex items-center gap-4 flex-shrink-0">
-        {activity.completed ? (
-          <span className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium bg-emerald-50 text-emerald-600 px-3 py-1.5 rounded-full">
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M20 6L9 17l-5-5" />
-            </svg>
-            Completada
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-amber-50 text-amber-500 px-3 py-1.5 rounded-full">
-            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 6v6l4 2" />
-            </svg>
-            Pendiente
-          </span>
-        )}
-        {activity.completed && activity.evidence_url && (
-          <a
-            href={activity.evidence_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
-            Ver evidencia
-          </a>
-        )}
-      </div>
-    </div>
-    <div className={`px-6 ${activity.completed ? 'py-2.5' : 'py-3'} bg-slate-50 border-t border-slate-100 flex items-center gap-2`}>
       {activity.completed ? (
-        <div className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <svg className="w-3 h-3 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 6v6l4 2" />
-            </svg>
-            <span className="text-xs text-slate-400">Completada el <span className="text-slate-500">{formatDate(activity.completed_at)}</span></span>
+        <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium bg-emerald-50 text-emerald-600 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full">
+          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+          Completada
+        </span>
+      ) : (
+        <span className="shrink-0 inline-flex items-center gap-1.5 text-xs font-medium bg-amber-50 text-amber-500 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full">
+          <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
+          Pendiente
+        </span>
+      )}
+    </div>
+    <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-100">
+      {activity.completed ? (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+          <div className="flex flex-col gap-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <svg className="w-3 h-3 text-slate-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+              <span className="text-xs text-slate-400">Completada el <span className="text-slate-500">{formatDate(activity.completed_at)}</span></span>
+            </div>
+            {activity.observations && (
+              <p className="text-xs text-slate-500 italic break-words">{activity.observations}</p>
+            )}
           </div>
-          {activity.observations && (
-            <p className="text-xs text-slate-500 italic">{activity.observations}</p>
+          {activity.evidence_url && (
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs shrink-0 pt-2 sm:pt-0 border-t border-slate-200 sm:border-0">
+              <span className="text-slate-400 font-medium">Evidencia:</span>
+              <a
+                href={activity.evidence_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Ver evidencia"
+                aria-label="Ver evidencia"
+                className="inline-flex items-center gap-1 py-1 text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              >
+                <ExternalLinkIcon className="w-3.5 h-3.5" />
+                Ver
+              </a>
+              {!isPlanExpired && (confirmingDelete ? (
+                <>
+                  <span className="text-slate-300">·</span>
+                  <span className="text-slate-500">¿Eliminar evidencia?</span>
+                  <button
+                    onClick={() => { setConfirmingDelete(false); onDeleteEvidence?.(activity.id); }}
+                    className="py-1 px-1 font-semibold text-red-600 hover:text-red-700 transition-colors"
+                  >
+                    Sí
+                  </button>
+                  <button
+                    onClick={() => setConfirmingDelete(false)}
+                    className="py-1 px-1 font-medium text-slate-500 hover:text-slate-700 transition-colors"
+                  >
+                    No
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="text-slate-300">·</span>
+                  <button
+                    onClick={() => onEdit?.(activity)}
+                    title="Editar evidencia"
+                    aria-label="Editar evidencia"
+                    className="inline-flex items-center gap-1 py-1 font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    <PencilIcon className="w-3.5 h-3.5" />
+                    Editar
+                  </button>
+                  <span className="text-slate-300">·</span>
+                  <button
+                    onClick={() => setConfirmingDelete(true)}
+                    title="Eliminar evidencia"
+                    aria-label="Eliminar evidencia"
+                    className="inline-flex items-center gap-1 py-1 font-medium text-red-600 hover:text-red-700 transition-colors"
+                  >
+                    <TrashIcon className="w-3.5 h-3.5" />
+                    Eliminar
+                  </button>
+                </>
+              ))}
+            </div>
           )}
         </div>
       ) : (
-        <div className="flex justify-end items-center gap-3 w-full">
-          <span className="hidden sm:inline text-xs text-slate-400 flex-1">Para completar esta actividad, sube un archivo de evidencia</span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          <span className="text-xs text-slate-400 sm:flex-1">Para completar esta actividad, sube un archivo de evidencia</span>
           <button
             onClick={() => onComplete(activity)}
             disabled={isPlanExpired}
-            className="inline-flex items-center gap-2 text-xs font-medium bg-[#1e3a8a] hover:bg-[#162d6e] text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#1e3a8a]"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-xs font-medium bg-[#1e3a8a] hover:bg-[#162d6e] text-white px-4 py-2.5 sm:py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#1e3a8a]"
           >
             <UploadIcon className="w-3 h-3" />
             Subir evidencia
@@ -188,7 +253,8 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onComplete, isPla
       )}
     </div>
   </div>
-);
+  );
+};
 
 const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee, onBack, onUpdatePlan }) => {
   const [activities, setActivities] = useState<UserActivity[]>([]);
@@ -200,6 +266,9 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [evidenceObservations, setEvidenceObservations] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [activityToEdit, setActivityToEdit] = useState<UserActivity | null>(null);
+  const [editingObservations, setEditingObservations] = useState('');
+  const [editingFile, setEditingFile] = useState<File | null>(null);
 
   const fetchActivities = useCallback(() => {
     setLoading(true);
@@ -239,6 +308,9 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
     setActivityToComplete(null);
     setSelectedFile(null);
     setEvidenceObservations('');
+    setActivityToEdit(null);
+    setEditingObservations('');
+    setEditingFile(null);
   };
 
   const handleUpload = async () => {
@@ -266,6 +338,59 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
       addToast(err instanceof Error ? err.message : 'Error al completar la actividad.', 'error');
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const startEdit = (activity: UserActivity) => {
+    setActivityToEdit(activity);
+    setEditingObservations(activity.observations ?? '');
+    setEditingFile(null);
+  };
+
+  const saveEdit = async () => {
+    if (!activityToEdit) return;
+    const observations = editingObservations.trim();
+    if (!editingFile && observations === (activityToEdit.observations ?? '').trim()) {
+      closeDrawer();
+      return;
+    }
+    setIsUploading(true);
+    try {
+      const completion = await activityService.updateMyCompletion(
+        activityToEdit.id,
+        observations,
+        editingFile ?? undefined
+      );
+      setActivities(activities.map(a =>
+        a.id === activityToEdit.id ? { ...a, ...completion } : a
+      ));
+      addToast('Actividad actualizada con éxito.', 'success');
+      closeDrawer();
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Error al actualizar la actividad.', 'error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const deleteMyEvidence = async (activityId: number) => {
+    try {
+      await activityService.deleteMyCompletion(activityId);
+      // Update local state - mark activity as pending (no evidence) and remove observations
+      const updatedActivities = activities.map(a =>
+        a.id === activityId ? { ...a, completed: false, evidence_url: null, observations: null } : a
+      );
+      setActivities(updatedActivities);
+      addToast('Evidencia eliminada con éxito.', 'success');
+      closeDrawer();
+      // Refresh plan progress
+      const updatedActivitiesFilter = updatedActivities.filter(a => a.completed).length;
+      const completion_percentage = plan.total_activities > 0
+        ? Math.round((updatedActivitiesFilter / plan.total_activities) * 100)
+        : 0;
+      onUpdatePlan(plan.id, { total_completed: updatedActivitiesFilter, completion_percentage });
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Error al eliminar la evidencia.', 'error');
     }
   };
 
@@ -349,6 +474,8 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
                 activity={activity}
                 onComplete={a => { setActivityToComplete(a); }}
                 isPlanExpired={isPlanExpired}
+                onEdit={startEdit}
+                onDeleteEvidence={deleteMyEvidence}
               />
             )) : (
               <div className="text-center text-slate-500 p-8 bg-white border border-slate-200 rounded-xl">
@@ -374,8 +501,27 @@ const EmployeePlanDetail: React.FC<EmployeePlanDetailProps> = ({ plan, employee,
           onUpload={handleUpload}
         />
       </Drawer>
+      <Drawer
+        isOpen={activityToEdit !== null}
+        onClose={closeDrawer}
+        title={`Editar actividad — ${activityToEdit?.title ?? ''}`}
+      >
+        <UploadEvidence
+          description={activityToEdit?.description ?? ''}
+          selectedFile={editingFile}
+          observations={editingObservations}
+          isUploading={isUploading}
+          onFileChange={setEditingFile}
+          onObservationsChange={setEditingObservations}
+          onCancel={closeDrawer}
+          onUpload={saveEdit}
+          submitLabel="Guardar cambios"
+          submittingLabel="Guardando..."
+          fileRequired={false}
+          currentEvidenceUrl={activityToEdit?.evidence_url}
+        />
+      </Drawer>
     </>
   );
 };
-
 export default EmployeePlanDetail;
